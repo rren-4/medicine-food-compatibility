@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>お薬サポート</title>
+<style>
+:root{
+  --bg:#F4F7FC; --card:#fff; --blue:#1D4ED8; --blue-d:#1739A6; --blue-l:#EAF1FE;
+  --text:#1E293B; --sub:#64748B; --border:#E2E8F0;
+  --bad-bg:#FDECEC; --bad-bd:#F7C6C6; --bad-tx:#DC2626;
+  --warn-bg:#FFF7E6; --warn-tx:#D97706;
+  --good-bg:#F0FDF4; --good-tx:#16A34A;
+  --best-tx:#1D4ED8;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;}
+body{background:var(--bg);color:var(--text);min-height:100%;}
+html,body{height:100%;}
+.app{min-height:100vh;}
+main{max-width:520px;margin:0 auto;padding:20px 16px calc(84px + env(safe-area-inset-bottom,0px));width:100%;}
+.bottomnav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;height:60px;padding-bottom:env(safe-area-inset-bottom,0px);z-index:50;}
+.bottomnav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.65rem;color:#94A3B8;text-decoration:none;cursor:pointer;}
+.bottomnav a .ic{font-size:1.25rem;}
+.bottomnav a.on{color:var(--blue);font-weight:700;}
+.page{display:none;}
+.page.on{display:block;animation:f .2s;}
+@keyframes f{from{opacity:0}to{opacity:1}}
+.back{display:inline-flex;gap:6px;align-items:center;background:#fff;border:1px solid var(--border);padding:7px 14px;border-radius:20px;font-size:.82rem;font-weight:600;color:var(--text);cursor:pointer;margin-bottom:16px;}
+h1{font-size:1.5rem;font-weight:800;text-align:center;margin-bottom:6px;}
+.sub{text-align:center;color:var(--sub);font-size:.88rem;margin-bottom:20px;}
+.rel{position:relative;}
+.searchwrap{position:relative;max-width:560px;margin:0 auto 20px;}
+.searchbox{display:flex;align-items:center;background:#fff;border:1px solid var(--border);border-radius:26px;padding:6px 6px 6px 18px;box-shadow:0 2px 10px rgba(29,78,216,.06);}
+.searchbox input{flex:1;border:none;outline:none;font-size:.95rem;background:transparent;}
+.searchbox button{background:var(--blue);color:#fff;border:none;padding:11px 22px;border-radius:20px;font-weight:700;font-size:.88rem;cursor:pointer;}
+.suggest{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.08);max-height:260px;overflow:auto;display:none;z-index:20;}
+.suggest div{padding:10px 16px;font-size:.85rem;border-bottom:1px solid #F1F5F9;cursor:pointer;}
+.suggest div:hover{background:var(--blue-l);}
+.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.fcard{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 10px;text-align:center;cursor:pointer;}
+.fcard.hi{background:linear-gradient(135deg,#3B6DF0,var(--blue-d));color:#fff;border:none;}
+.fcard .ic{font-size:1.5rem;margin-bottom:8px;}
+.fcard .t{font-weight:700;font-size:.92rem;}
+.fcard .d{font-size:.72rem;opacity:.85;margin-top:2px;}
+footer{text-align:center;font-size:.72rem;color:var(--sub);margin-top:28px;}
+footer b{color:#B45309;}
+/* 相性チェックフォーム */
+.formcard{background:#fff;border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:18px;}
+.flabel{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.9rem;margin-bottom:8px;}
+.dot{width:22px;height:22px;border-radius:50%;background:var(--blue-l);flex-shrink:0;}
+.finput{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font-size:.92rem;margin-bottom:16px;outline:none;}
+.finput:focus{border-color:var(--blue);}
+.bigbtn{width:100%;background:var(--blue);color:#fff;border:none;padding:14px;border-radius:12px;font-weight:700;font-size:.95rem;cursor:pointer;}
+.chip-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.chip{background:var(--blue-l);color:var(--blue-d);border-radius:12px;padding:10px 14px;font-size:.82rem;font-weight:600;cursor:pointer;}
+/* 判定結果2カラム */
+.res-grid{display:grid;grid-template-columns:1fr;gap:16px;}
+@media(min-width:600px){.res-grid{grid-template-columns:1.5fr 1fr;}}
+.res-main{background:#fff;border-radius:16px;padding:20px;border:1px solid var(--border);}
+.res-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+.res-name{font-size:1.1rem;font-weight:800;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;font-weight:700;font-size:.78rem;}
+.badge.bad{background:var(--bad-tx);color:#fff;}
+.badge.warn{background:var(--warn-tx);color:#fff;}
+.badge.good{background:var(--good-tx);color:#fff;}
+.badge.best{background:var(--blue);color:#fff;}
+.box{border-radius:12px;padding:14px;font-size:.85rem;line-height:1.6;margin-bottom:12px;}
+.box.reason{background:#FFF7ED;color:#92400E;}
+.box.tip{background:var(--blue-l);color:var(--blue-d);}
+.tagline{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.tagline span{background:#fff;border:1px solid var(--border);padding:4px 10px;border-radius:14px;font-size:.75rem;}
+.side-card{background:#fff;border-radius:16px;padding:18px;border:1px solid var(--border);margin-bottom:14px;}
+.side-card h3{font-size:.85rem;font-weight:700;margin-bottom:10px;display:flex;gap:6px;align-items:center;}
+.nbig{font-size:1.6rem;font-weight:800;color:var(--blue);}
+.side-card p{font-size:.78rem;color:var(--sub);margin-top:6px;line-height:1.5;}
+.guide-btn{width:100%;background:var(--blue-d);color:#fff;border:none;padding:11px;border-radius:10px;font-weight:700;font-size:.85rem;margin-top:10px;cursor:pointer;}
+/* 薬詳細ページ */
+.dh{background:#fff;border-radius:16px;padding:18px 20px;border:1px solid var(--border);margin-bottom:18px;}
+.dh .n{font-size:1.3rem;font-weight:800;}
+.dh .c{font-size:.82rem;color:var(--sub);margin-top:2px;}
+.tier{border-radius:16px;padding:18px;margin-bottom:14px;border:2px solid;}
+.tier.bad{background:var(--bad-bg);border-color:var(--bad-bd);}
+.tier .th{font-weight:800;font-size:1rem;display:flex;gap:8px;align-items:center;margin-bottom:12px;color:var(--bad-tx);}
+.tier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.tier-grid .ti{background:#fff;border-radius:10px;padding:10px 4px;text-align:center;font-size:.75rem;font-weight:700;color:var(--bad-tx);}
+.tier-grid .ti span{display:block;font-size:1.2rem;margin-bottom:4px;}
+.tier .desc{background:#fff;padding:10px 12px;border-radius:8px;font-size:.8rem;line-height:1.5;color:#444;}
+.sec2{font-weight:700;font-size:.95rem;margin:18px 0 10px;display:flex;gap:6px;align-items:center;}
+.card2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.icard{background:#fff;border-radius:12px;padding:12px;border:1px solid var(--border);}
+.icard .it{font-weight:700;font-size:.85rem;margin-bottom:4px;}
+.icard .id{font-size:.72rem;color:var(--sub);line-height:1.4;}
+.notice{background:#fff;border:1px dashed #CBD5E1;border-radius:12px;padding:14px;font-size:.78rem;color:var(--sub);margin-top:18px;line-height:1.6;}
+/* お薬ノート */
+.datebar{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 16px;margin-bottom:16px;font-weight:700;font-size:.9rem;}
+.datebar span{cursor:pointer;color:var(--blue);font-size:1rem;}
+.note-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;}
+.note-top{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--sub);margin-bottom:6px;}
+.note-top .st{padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700;}
+.st.ok{background:var(--good-bg);color:var(--good-tx);}
+.st.warn{background:var(--warn-bg);color:var(--warn-tx);}
+.st.bad{background:var(--bad-bg);color:var(--bad-tx);}
+.st.good{background:var(--good-bg);color:var(--good-tx);}
+.st.best{background:var(--blue-l);color:var(--blue-d);}
+.opt-btn{display:flex;align-items:center;gap:8px;text-align:left;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.85rem;cursor:pointer;width:100%;}
+.opt-btn:hover{background:var(--bg);}
+.opt-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.opt-dot.bad{background:var(--bad-tx);}
+.opt-dot.warn{background:var(--warn-tx);}
+.opt-dot.good{background:var(--good-tx);}
+.opt-dot.best{background:var(--blue);}
+.note-name{font-weight:700;font-size:.95rem;margin-bottom:6px;}
+.note-mix{background:var(--bg);border-radius:8px;padding:8px 10px;font-size:.8rem;line-height:1.5;}
+.addbtn{width:100%;background:var(--blue);color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;cursor:pointer;margin-top:6px;}
+/* アラーム */
+.al-master{background:var(--blue-l);border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.al-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;}
+.al-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.al-top .n{font-weight:700;font-size:.95rem;}
+.al-top .d{font-size:.75rem;color:var(--sub);}
+.al-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #F1F5F9;font-size:.85rem;}
+.al-row b{font-size:1rem;}
+sw{--w:44px;display:inline-block;}
+.tgl{width:44px;height:26px;border-radius:14px;background:#CBD5E1;position:relative;cursor:pointer;flex-shrink:0;}
+.tgl.on{background:var(--blue);}
+.tgl i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;}
+.tgl.on i{left:21px;}
+.note-form input{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-size:.88rem;outline:none;}
+.notreg{text-align:center;padding:40px 20px;color:var(--sub);font-size:.88rem;}
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:300;padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:#fff;border-radius:18px;padding:22px;max-width:340px;width:100%;}
+.modal-box h3{font-size:1.05rem;margin-bottom:10px;}
+.modal-box p{font-size:.86rem;color:var(--sub);margin-bottom:14px;line-height:1.5;}
+.modal-box input{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;margin-bottom:12px;font-size:.9rem;outline:none;}
+.modal-actions{display:flex;gap:10px;}
+.modal-actions button{flex:1;padding:11px;border-radius:10px;font-weight:700;border:none;cursor:pointer;font-size:.85rem;}
+.modal-actions .cancel{background:#F1F5F9;color:var(--text);}
+.modal-actions .ok{background:var(--blue);color:#fff;}
+.verdict{border-radius:18px;padding:26px 16px;text-align:center;margin-bottom:16px;color:#fff;}
+.verdict.bad{background:linear-gradient(135deg,#EF4444,var(--bad-tx));}
+.verdict.warn{background:linear-gradient(135deg,#F59E0B,var(--warn-tx));}
+.verdict.good{background:linear-gradient(135deg,#22C55E,var(--good-tx));}
+.verdict.best{background:linear-gradient(135deg,#3B82F6,var(--blue-d));}
+.verdict .vi{font-size:2.6rem;line-height:1;margin-bottom:8px;}
+.verdict .vt{font-size:1.35rem;font-weight:800;}
+</style>
+</head>
+<body>
+<div class="app">
+<main class="">
+
+<!-- ホーム -->
+<section class="page" id="home">
+  <h1 class="">今日のおくすり、どうやって飲ませる？</h1>
+  <p class="sub">お子様に合った飲み合わせを見つけて、安心してお薬の時間を。</p>
+  <div class="searchwrap">
+    <div class="searchbox">
+      <span style="margin-right:6px;color:#94A3B8;">🔍</span>
+      <input id="homeSearch" placeholder="薬の名前を入力（例：クラリス、カルボシステイン）" oninput="suggest(this.value)" class="">
+      <button onclick="doSearch()">検索</button>
+    </div>
+    <div class="suggest" id="suggestBox" style="display: none;"></div>
+  </div>
+  <div class="cards3">
+    <div class="fcard hi" onclick="go('checkform')"><div class="ic">⚖️</div><div class="t">相性チェック</div><div class="d">飲み合わせを調べる</div></div>
+    <div class="fcard" onclick="go('note')"><div class="ic">📖</div><div class="t">お薬ノート</div><div class="d">記録を確認する</div></div>
+    <div class="fcard" onclick="go('alarm')"><div class="ic">⏰</div><div class="t">のみ忘れ防止</div><div class="d">アラーム設定</div></div>
+  </div>
+  <footer><b>お薬サポート</b><br>© 2026 未来探究プロジェクト　開発：城ノ内中等教育学校 宗本漣</footer>
+</section>
+
+<!-- 相性チェック 入力フォーム -->
+<section class="page on" id="checkform">
+  <div class="back" onclick="go('home')">← 戻る</div>
+  <h1 style="color:var(--blue);">相性チェック</h1>
+  <p class="sub">お薬と混ぜるものの相性を確認しましょう</p>
+  <div class="formcard">
+    <div class="flabel"><span class="dot"></span>お薬の名前を入力</div>
+    <div class="rel">
+      <input class="finput" id="ckDrug" placeholder="薬の名前を入力（例：クラリス、くらりす）" oninput="suggestCk(this.value)" autocomplete="off">
+      <div class="suggest" id="ckSuggestBox" style="display: none;"><div data-n="アスベリンシロップ0.5%">💊 アスベリンシロップ0.5%</div><div data-n="カロナールシロップ2%">💊 カロナールシロップ2%</div><div data-n="エンシュア・H">💊 エンシュア・H</div><div data-n="オロパタジン塩酸塩顆粒0.5%" class="">💊 オロパタジン塩酸塩顆粒0.5%</div><div data-n="アンブロキソール塩酸塩DS小児用1.5%">💊 アンブロキソール塩酸塩DS小児用1.5%</div><div data-n="エンシュア・リキッド">💊 エンシュア・リキッド</div><div data-n="アンブロキソール塩酸塩シロップ小児用0.3%">💊 アンブロキソール塩酸塩シロップ小児用0.3%</div><div data-n="カロナール細粒20%">💊 カロナール細粒20%</div></div>
+    </div>
+    <div class="flabel"><span class="dot" style="background:#FFF3E0;"></span>混ぜるものを入力</div>
+    <input class="finput" id="ckFood" placeholder="混ぜるものを入力（例：オレンジジュース）">
+    <button class="bigbtn" onclick="runCheck()">相性を判定する →</button>
+  </div>
+  <p class="sub" style="margin-bottom:10px;">よく調べられる組み合わせ</p>
+  <div class="chip-row">
+    <div class="chip" onclick="quick('クラリスドライシロップ','オレンジジュース')">クラリス + オレンジジュース</div>
+    <div class="chip" onclick="quick('カルボシステイン','服薬補助ゼリー')">カルボシステイン + ゼリー</div>
+  </div>
+</section>
+
+<!-- 相性判定結果（ペア） -->
+<section class="page" id="result">
+  <div class="back" onclick="go('checkform')">← 戻る</div>
+  <h1 id="resTitle" style="font-size:1.25rem;">相性判定結果</h1>
+  <p class="sub" id="resSub">お薬と飲み物の組み合わせを確認しましょう</p>
+  <div class="res-grid">
+    <div class="res-main">
+      <div class="verdict warn" id="verdictBox">
+        <div class="vi" id="verdictIcon">△</div>
+        <div class="vt" id="verdictText">要確認 (△)</div>
+      </div>
+      <div class="res-top">
+        <div><div class="res-name" id="resDrugFood">オロパタジン塩酸塩顆粒0.5% × オレンジジュース</div></div>
+      </div>
+      <div class="box reason"><b>⚠ 反応・理由</b><br><span id="resReason">「オレンジジュース」についてのデータはこの薬の登録内容には見つかりませんでした。非推奨：熱湯(室温超の高温)。とってもおすすめ：水・ぬるま湯。</span></div>
+      <div class="box tip"><b>💡 おすすめの組み合わせ</b><br><span id="resTip">薬剤師・医師にご確認のうえ服用してください。</span>
+        <div class="tagline" id="resTagline"></div>
+      </div>
+      <div class="formcard" style="padding:16px;">
+        <button class="bigbtn" style="margin-bottom:8px;" onclick="askSaveNoteFromResult()">📖 この結果をお薬ノートに保存する</button>
+        <button class="bigbtn" style="background:var(--blue-l);color:var(--blue-d);" onclick="askSetAlarm()">⏰ 飲み忘れ防止のアラームを設定する</button>
+      </div>
+    </div>
+    <div>
+      <div class="side-card">
+        <h3>🧪 学術的根拠</h3>
+        <div class="nbig" id="resN">エビデンス</div>
+        <p id="resEvidence">この食品の登録データはありません。</p>
+      </div>
+      <div class="side-card">
+        <h3>お薬の飲ませ方に困ったら？</h3>
+        <p>お薬ノートに記録して、次回の参考にしましょう。</p>
+        <button class="guide-btn" onclick="go('note')">お薬ノートを見る</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 薬詳細（検索結果） -->
+<section class="page" id="detail">
+  <div class="back" onclick="go('home')">← ホームに戻る</div>
+  <div class="dh"><div class="n" id="dtName">-</div><div class="c" id="dtCat">-</div></div>
+  <div id="dtBody"></div>
+  <div class="formcard" style="padding:16px;">
+    <button class="bigbtn" style="margin-bottom:8px;" onclick="askSaveNoteFromDetail()">📖 お薬ノートに保存する</button>
+    <button class="bigbtn" style="background:var(--blue-l);color:var(--blue-d);" onclick="askSetAlarm()">⏰ 飲み忘れ防止のアラームを設定する</button>
+  </div>
+</section>
+
+<!-- お薬ノート -->
+<section class="page" id="note">
+  <div class="back" onclick="go('home')">← ホームに戻る</div>
+  <h1 style="text-align:left;font-size:1.3rem;">📖 お薬ノート</h1>
+  <p class="sub" style="text-align:left;">お子様の服薬の経過を記録しましょう。</p>
+  <div class="datebar"><span onclick="shiftDate(-1)">‹</span><span id="noteDate">今日 9月27日</span><span onclick="shiftDate(1)">›</span></div>
+  <div id="noteList"><div class="notreg">この日の記録はまだありません。</div></div>
+  <div class="formcard note-form" style="margin-top:14px;">
+    <input id="nDrug" placeholder="お薬の名前（例：カルボシステイン）">
+    <input id="nFood" placeholder="混ぜたもの（例：チョコアイス）">
+    <input id="nMemo" placeholder="メモ（例：嫌がらずに飲めた）">
+    <button class="addbtn" onclick="addNote()">＋ 手動で記録を追加</button>
+  </div>
+</section>
+
+<!-- アラーム -->
+<section class="page" id="alarm">
+  <div class="back" onclick="go('home')">← ホームに戻る</div>
+  <h1 style="text-align:left;font-size:1.3rem;">⏰ アラーム設定</h1>
+  <p class="sub" style="text-align:left;">飲み忘れを防ぐための通知時間を設定します。</p>
+  <div class="al-master"><div><b>すべてのアラーム</b><div style="font-size:.78rem;color:var(--sub);">一時的にすべての通知を停止します</div></div><div class="tgl on" onclick="this.classList.toggle('on')"><i></i></div></div>
+  <div id="alarmList"><div class="notreg">アラームはまだありません。</div></div>
+  <button class="bigbtn" onclick="manualAddAlarm()">＋ 新しいアラームを追加</button>
+</section>
+
+</main>
+<nav class="bottomnav">
+  <a class="nav" data-p="home"><span class="ic">🏠</span>ホーム</a>
+  <a class="nav on" data-p="checkform"><span class="ic">⚖️</span>相性チェック</a>
+  <a class="nav" data-p="note"><span class="ic">📖</span>お薬ノート</a>
+  <a class="nav" data-p="alarm"><span class="ic">⏰</span>アラーム</a>
+</nav>
+<div class="modal-overlay" id="modalOverlay"><div class="modal-box" id="modalBox"><h3>飲食品を選び直す</h3><p>判定結果の中から、どの飲食品を使いますか？</p><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow:auto;"><button class="opt-btn" onclick="selectResultFood('熱湯(室温超の高温)','bad')"><span class="opt-dot bad"></span>熱湯(室温超の高温)</button><button class="opt-btn" onclick="selectResultFood('服薬補助ゼリー(チョコ味/イチゴ味等)','good')"><span class="opt-dot good"></span>服薬補助ゼリー(チョコ味/イチゴ味等)</button><button class="opt-btn" onclick="selectResultFood('少量のジュース(リンゴ等)','good')"><span class="opt-dot good"></span>少量のジュース(リンゴ等)</button><button class="opt-btn" onclick="selectResultFood('水','best')"><span class="opt-dot best"></span>水</button><button class="opt-btn" onclick="selectResultFood('ぬるま湯','best')"><span class="opt-dot best"></span>ぬるま湯</button></div><div style="display:flex;gap:8px;margin-bottom:12px;"><input id="otherFoodInputR" placeholder="その他の飲食品名" style="margin-bottom:0;"><button class="ok" style="flex:0 0 auto;padding:0 16px;" onclick="saveResultFoodOther()">保存</button></div><div class="modal-actions"><button class="cancel" style="flex:1" onclick="closeModal()">キャンセル</button></div></div></div>
+</div>
+
+<script>
+const ALL_DRUGS = [{"c":622307001,"n":"エネーボ配合経腸用液","k":"えねーぼ, エネーボ, エネーボ配合経腸用液, 濃厚流動食, 経腸栄養剤"},{"c":620384409,"n":"カルボシステインシロップ小児用5%","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステインシロップ小児用5%, カルボシステインシロップ小児用5%「NIG」, カルボシステインシロップ小児用５％「ＮＩＧ」, ムコダイン, 去痰薬"},{"c":622070901,"n":"ラコールNF配合経腸用液","k":"らこーる, ラコール, ラコールNF配合経腸用液, ラコールＮＦ配合経腸用液, 濃厚流動食, 経腸栄養剤"},{"c":622346201,"n":"ラコールNF配合経腸用半固形剤","k":"らこーる, ラコール, ラコールNF配合経腸用半固形剤, ラコールＮＦ配合経腸用半固形剤, 濃厚流動食, 経腸栄養剤"},{"c":620002502,"n":"アスベリンシロップ0.5%","k":"あすべりん, せきどめ, アスベリン, アスベリンシロップ0.5%, アスベリンシロップ０．５％, 咳止め, 鎮咳薬"},{"c":622004901,"n":"カルボシステインシロップ5%","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステインシロップ5%, カルボシステインシロップ5%「タカタ」(同フォーム), カルボシステインシロップ５％「タカタ」（同フォーム）, ムコダイン, 去痰薬"},{"c":621973701,"n":"カルボシステインDS50%","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステインDS50%, カルボシステインDS50%「タカタ」(同フォーム), カルボシステインＤＳ５０％「タカタ」（同フォーム）, ムコダイン, 去痰薬"},{"c":622676401,"n":"イノラス配合経腸用液","k":"いのらす, イノラス, イノラス配合経腸用液, 濃厚流動食, 経腸栄養剤"},{"c":622813801,"n":"レボセチリジン塩酸塩シロップ0.05%","k":"ざいざる, れぼせちりじん, アレルギー, ザイザル, レボセチリジン, レボセチリジン塩酸塩シロップ0.05%, レボセチリジン塩酸塩シロップ0.05%「サワイ」, レボセチリジン塩酸塩シロップ０．０５％「サワイ」, 花粉症"},{"c":620384501,"n":"カルボシステインシロップ小児用5%","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステインシロップ小児用5%, カルボシステインシロップ小児用5%「トーワ」, カルボシステインシロップ小児用５％「トーワ」, ムコダイン, 去痰薬"},{"c":622790601,"n":"レボセチリジン塩酸塩シロップ0.05%","k":"ざいざる, れぼせちりじん, アレルギー, ザイザル, レボセチリジン, レボセチリジン塩酸塩シロップ0.05%, レボセチリジン塩酸塩シロップ0.05%「トーワ」, レボセチリジン塩酸塩シロップ０．０５％「トーワ」, 花粉症"},{"c":622308201,"n":"ザイザルシロップ0.05%","k":"ざいざる, れぼせちりじん, アレルギー, ザイザル, ザイザルシロップ0.05%, ザイザルシロップ０．０５％, レボセチリジン, 花粉症"},{"c":612220508,"n":"ムコダインシロップ5%","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, ムコダイン, ムコダインシロップ5%, ムコダインシロップ５％, 去痰薬"},{"c":620002510,"n":"カロナールシロップ2%","k":"あせとあみのふぇん, かろなーる, ねつさまし, アセトアミノフェン, カロナール, カロナールシロップ2%, カロナールシロップ２％, 解熱鎮痛薬"},{"c":610407025,"n":"エンシュア・H","k":"えんしゅあ, エンシュア, エンシュア・H, エンシュア・Ｈ, 濃厚流動食, 経腸栄養剤"},{"c":622371701,"n":"オロパタジン塩酸塩顆粒0.5%","k":"あれろっく, おろぱたじん, アレルギー, アレロック, オロパタジン, オロパタジン塩酸塩顆粒0.5%, オロパタジン塩酸塩顆粒0.5%「トーワ」, オロパタジン塩酸塩顆粒０．５％「トーワ」, 花粉症"},{"c":622811201,"n":"レボセチリジン塩酸塩シロップ0.05%","k":"ざいざる, れぼせちりじん, アレルギー, ザイザル, レボセチリジン, レボセチリジン塩酸塩シロップ0.05%, レボセチリジン塩酸塩シロップ0.05%「ニプロ」, レボセチリジン塩酸塩シロップ０．０５％「ニプロ」, 花粉症"},{"c":620390701,"n":"アンブロキソール塩酸塩DS小児用1.5%","k":"あんぶろきそーる, むこさーる, むこそるばん, アンブロキソール, アンブロキソール塩酸塩DS小児用1.5%, アンブロキソール塩酸塩DS小児用1.5%「タカタ」, アンブロキソール塩酸塩ＤＳ小児用１．５％「タカタ」, ムコサール, ムコソルバン, 去痰薬"},{"c":613250027,"n":"エンシュア・リキッド","k":"えんしゅあ, エンシュア, エンシュア・リキッド, 濃厚流動食, 経腸栄養剤"},{"c":620808104,"n":"トラネキサム酸シロップ5%","k":"とらんさみん, のどの痛み, トラネキサム酸, トラネキサム酸シロップ5%, トラネキサム酸シロップ5%「NIG」, トラネキサム酸シロップ５％「ＮＩＧ」, トランサミン, 止血剤"},{"c":620003633,"n":"メプチンシロップ5μg/mL 0.0005%","k":"メプチンシロップ5μg/mL 0.0005%, メプチンシロップ５μｇ／ｍＬ　０．０００５％"},{"c":620390201,"n":"アンブロキソール塩酸塩シロップ小児用0.3%","k":"あんぶろきそーる, むこさーる, むこそるばん, アンブロキソール, アンブロキソール塩酸塩シロップ小児用0.3%, アンブロキソール塩酸塩シロップ小児用0.3%「タカタ」, アンブロキソール塩酸塩シロップ小児用０．３％「タカタ」, ムコサール, ムコソルバン, 去痰薬"},{"c":612370066,"n":"ミヤBM細粒","k":"みやびーえむ, ミヤBM, ミヤBM細粒, ミヤＢＭ, ミヤＢＭ細粒, 整腸剤, 酪酸菌"},{"c":620005540,"n":"プランルカストDS10%","k":"おのん, ぜんそく, ぷらんるかすと, オノン, プランルカスト, プランルカストDS10%, プランルカストDS10%「タカタ」, プランルカストＤＳ１０％「タカタ」, 喘息"},{"c":621989901,"n":"ムコダインDS50%","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, ムコダイン, ムコダインDS50%, ムコダインＤＳ５０％, 去痰薬"},{"c":620002022,"n":"カロナール細粒20%","k":"あせとあみのふぇん, かろなーる, ねつさまし, アセトアミノフェン, カロナール, カロナール細粒20%, カロナール細粒２０％, 解熱鎮痛薬"},{"c":622832901,"n":"モビコール配合内用剤LD 6.8523g","k":"べんぴやく, もびこーる, モビコール, モビコール配合内用剤LD 6.8523g, モビコール配合内用剤ＬＤ　６．８５２３ｇ, 便秘薬"},{"c":621073001,"n":"ワイドシリン細粒20% 200mg","k":"わいどしりん, アモキシシリン, ワイドシリン, ワイドシリン細粒20% 200mg, ワイドシリン細粒２０％　２００ｍｇ, 抗生剤"},{"c":622090301,"n":"アレロック顆粒0.5%","k":"あれろっく, おろぱたじん, アレルギー, アレロック, アレロック顆粒0.5%, アレロック顆粒０．５％, オロパタジン, 花粉症"},{"c":622181501,"n":"カルボシステインシロップ5%","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステインシロップ5%, カルボシステインシロップ5%「JG」, カルボシステインシロップ５％「ＪＧ」, ムコダイン, 去痰薬"},{"c":621369813,"n":"プロカテロール塩酸塩シロップ5μg/mL 日医工 0.0005%","k":"プロカテロール塩酸塩シロップ5μg/mL 日医工 0.0005%, プロカテロール塩酸塩シロップ５μｇ／ｍＬ　日医工　０．０００５％"},{"c":620418501,"n":"ビオフェルミンR散","k":"びおふぇるみん, ビオフェルミン, ビオフェルミンR散, ビオフェルミンＲ散, 乳酸菌, 整腸剤"},{"c":622808401,"n":"レボセチリジン塩酸塩シロップ0.05%","k":"ざいざる, れぼせちりじん, アレルギー, ザイザル, レボセチリジン, レボセチリジン塩酸塩シロップ0.05%, レボセチリジン塩酸塩シロップ0.05%「アメル」, レボセチリジン塩酸塩シロップ０．０５％「アメル」, 花粉症"},{"c":620005924,"n":"インクレミンシロップ5%","k":"いんくれみん, てつざい, インクレミン, インクレミンシロップ5%, インクレミンシロップ５％, 貧血, 鉄剤"},{"c":620002503,"n":"アスベリンドライシロップ2%","k":"あすべりん, せきどめ, アスベリン, アスベリンドライシロップ2%, アスベリンドライシロップ２％, 咳止め, 鎮咳薬"},{"c":620004926,"n":"アンブロキソール塩酸塩シロップ小児用0.3%","k":"あんぶろきそーる, むこさーる, むこそるばん, アンブロキソール, アンブロキソール塩酸塩シロップ小児用0.3%, アンブロキソール塩酸塩シロップ小児用0.3%「タイヨー」, アンブロキソール塩酸塩シロップ小児用０．３％「タイヨー」, ムコサール, ムコソルバン, 去痰薬"},{"c":621268301,"n":"アンブロキソール塩酸塩シロップ小児用0.3%","k":"あんぶろきそーる, むこさーる, むこそるばん, アンブロキソール, アンブロキソール塩酸塩シロップ小児用0.3%, アンブロキソール塩酸塩シロップ小児用0.3%「トーワ」, アンブロキソール塩酸塩シロップ小児用０．３％「トーワ」, ムコサール, ムコソルバン, 去痰薬"},{"c":622412001,"n":"カルボシステインDS50%","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステインDS50%, カルボシステインDS50%「トーワ」, カルボシステインＤＳ５０％「トーワ」, ムコダイン, 去痰薬"},{"c":620881402,"n":"ラクツロースシロップ65%","k":"もにらっく, らくつろーす, モニラック, ラクツロース, ラクツロースシロップ65%, ラクツロースシロップ65%「タカタ」, ラクツロースシロップ６５％「タカタ」, 便秘薬"},{"c":615100581,"n":"ヨクイニンエキス錠","k":"いぼ, よくいにん, ハトムギ, ヨクイニン, ヨクイニンエキス錠, ヨクイニンエキス錠「コタロー」"},{"c":620003140,"n":"オノンドライシロップ10%","k":"おのん, ぜんそく, ぷらんるかすと, オノン, オノンドライシロップ10%, オノンドライシロップ１０％, プランルカスト, 喘息"},{"c":620754601,"n":"エレンタールP乳幼児用配合内用剤","k":"えれんたーる, アミノ酸, エレンタール, エレンタールP乳幼児用配合内用剤, エレンタールＰ乳幼児用配合内用剤, 経腸栄養剤"},{"c":620002500,"n":"アスベリン散10%","k":"あすべりん, せきどめ, アスベリン, アスベリン散10%, アスベリン散１０％, 咳止め, 鎮咳薬"},{"c":622657201,"n":"フェキソフェナジン塩酸塩DS5%","k":"あれぐら, ふぇきそふぇなじん, アレグラ, アレルギー, フェキソフェナジン, フェキソフェナジン塩酸塩DS5%, フェキソフェナジン塩酸塩DS5%「トーワ」, フェキソフェナジン塩酸塩ＤＳ５％「トーワ」, 花粉症"},{"c":622627001,"n":"シダキュアスギ花粉舌下錠5,000JAU","k":"しだきゅあ, シダキュア, シダキュアスギ花粉舌下錠5,000JAU, シダキュアスギ花粉舌下錠５，０００ＪＡＵ, スギ花粉, 舌下免疫療法"},{"c":622455301,"n":"ミティキュアダニ舌下錠10,000JAU","k":"みてぃきゅあ, ダニ, ミティキュア, ミティキュアダニ舌下錠10,000JAU, ミティキュアダニ舌下錠１０，０００ＪＡＵ, 舌下免疫療法"},{"c":620395001,"n":"メジコン配合シロップ","k":"せきどめ, めじこん, デキストロメトルファン, メジコン, メジコン配合シロップ"},{"c":620008745,"n":"ムコサールドライシロップ1.5%","k":"あんぶろきそーる, むこさーる, アンブロキソール, ムコサール, ムコサールドライシロップ1.5%, ムコサールドライシロップ１．５％, 去痰薬"},{"c":620383801,"n":"カルボシステイン錠250mg","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステイン錠250mg, カルボシステイン錠250mg「トーワ」, カルボシステイン錠２５０ｍｇ「トーワ」, ムコダイン, 去痰薬"},{"c":620007001,"n":"トランサミンシロップ5%","k":"とらんさみん, のどの痛み, トラネキサム酸, トランサミン, トランサミンシロップ5%, トランサミンシロップ５％, 止血剤"},{"c":621641302,"n":"マルツエキス分包","k":"まるつえきす, マルツエキス, マルツエキス分包, マルツエキス分包(高田), マルツエキス分包（高田）, 便秘薬, 麦芽糖"},{"c":620002152,"n":"メプチンドライシロップ0.005%","k":"メプチンドライシロップ0.005%, メプチンドライシロップ０．００５％"},{"c":622539901,"n":"モンテルカスト細粒4mg","k":"きぷれす, しんぐれあ, ぜんそく, もんてるかすと, キプレス, シングレア, モンテルカスト, モンテルカスト細粒4mg, モンテルカスト細粒4mg「タカタ」, モンテルカスト細粒４ｍｇ「タカタ」, 喘息"},{"c":620390101,"n":"小児用ムコソルバンシロップ0.3%","k":"あんぶろきそーる, むこそるばん, アンブロキソール, ムコソルバン, 去痰薬, 小児用ムコソルバンシロップ0.3%, 小児用ムコソルバンシロップ０．３％"},{"c":622705301,"n":"レボセチリジン塩酸塩DS0.5%","k":"ざいざる, れぼせちりじん, アレルギー, ザイザル, レボセチリジン, レボセチリジン塩酸塩DS0.5%, レボセチリジン塩酸塩DS0.5%「タカタ」, レボセチリジン塩酸塩ＤＳ０．５％「タカタ」, 花粉症"},{"c":617140012,"n":"単シロップ","k":"単シロップ"},{"c":621369806,"n":"プロカテロール塩酸塩シロップ5μg/mL 0.0005%","k":"プロカテロール塩酸塩シロップ5μg/mL 0.0005%, プロカテロール塩酸塩シロップ5μg/mL「日新」 0.0005%, プロカテロール塩酸塩シロップ５μｇ／ｍＬ「日新」　０．０００５％"},{"c":622338401,"n":"オロパタジン塩酸塩OD錠5mg","k":"あれろっく, おろぱたじん, アレルギー, アレロック, オロパタジン, オロパタジン塩酸塩OD錠5mg, オロパタジン塩酸塩OD錠5mg「トーワ」, オロパタジン塩酸塩ＯＤ錠５ｍｇ「トーワ」, 花粉症"},{"c":620004620,"n":"リンデロンシロップ0.01%","k":"りんでろん, ステロイド, ベタメタゾン, リンデロン, リンデロンシロップ0.01%, リンデロンシロップ０．０１％"},{"c":620383101,"n":"カルボシステイン錠250mg","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステイン錠250mg, カルボシステイン錠250mg「サワイ」, カルボシステイン錠２５０ｍｇ「サワイ」, ムコダイン, 去痰薬"},{"c":620005106,"n":"ペリアクチンシロップ0.04%","k":"ぺりあくちん, シプロヘプタジン, ペリアクチン, ペリアクチンシロップ0.04%, ペリアクチンシロップ０．０４％, 抗ヒスタミン"},{"c":610462002,"n":"タミフルドライシロップ3%","k":"おせるたみびる, たみふる, インフルエンザ, オセルタミビル, タミフル, タミフルドライシロップ3%, タミフルドライシロップ３％"},{"c":620384402,"n":"カルボシステインシロップ小児用5%","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステインシロップ小児用5%, カルボシステインシロップ小児用5%「テバ」, カルボシステインシロップ小児用５％「テバ」, ムコダイン, 去痰薬"},{"c":620005821,"n":"キプレス細粒4mg","k":"きぷれす, しんぐれあ, もんてるかすと, キプレス, キプレス細粒4mg, キプレス細粒４ｍｇ, シングレア, モンテルカスト, 喘息"},{"c":620754301,"n":"エレンタール配合内用剤","k":"えれんたーる, アミノ酸, エレンタール, エレンタール配合内用剤, 経腸栄養剤"},{"c":622014201,"n":"アレロックOD錠5 5mg","k":"あれろっく, おろぱたじん, アレルギー, アレロック, アレロックOD錠5 5mg, アレロックＯＤ錠５　５ｍｇ, オロパタジン, 花粉症"},{"c":620006886,"n":"キプレスチュアブル錠5mg","k":"きぷれす, しんぐれあ, もんてるかすと, キプレス, キプレスチュアブル錠5mg, キプレスチュアブル錠５ｍｇ, シングレア, モンテルカスト, 喘息"},{"c":620937605,"n":"シプロヘプタジン塩酸塩シロップ0.04%","k":"しぷろへぷたじん, シプロヘプタジン, シプロヘプタジン塩酸塩シロップ0.04%, シプロヘプタジン塩酸塩シロップ0.04%「NIG」, シプロヘプタジン塩酸塩シロップ０．０４％「ＮＩＧ」, ペリアクチン, 抗ヒスタミン"},{"c":622539801,"n":"モンテルカストチュアブル錠5mg","k":"きぷれす, しんぐれあ, ぜんそく, もんてるかすと, キプレス, シングレア, モンテルカスト, モンテルカストチュアブル錠5mg, モンテルカストチュアブル錠5mg「タカタ」, モンテルカストチュアブル錠５ｍｇ「タカタ」, 喘息"},{"c":620006831,"n":"アリメジンシロップ0.05%","k":"ありめじん, アリメジン, アリメジンシロップ0.05%, アリメジンシロップ０．０５％, ヒポヒカ, 抗ヒスタミン"},{"c":622546701,"n":"インチュニブ錠1mg","k":"ADHD, いんちゅにぶ, ぐあんふぁしん, インチュニブ, インチュニブ錠1mg, インチュニブ錠１ｍｇ, グアンファシン"},{"c":620002023,"n":"カロナール錠200 200mg","k":"あせとあみのふぇん, かろなーる, ねつさまし, アセトアミノフェン, カロナール, カロナール錠200 200mg, カロナール錠２００　２００ｍｇ, 解熱鎮痛薬"},{"c":620420001,"n":"ビオフェルミン配合散","k":"びおふぇるみん, ビオフェルミン, ビオフェルミン配合散, 乳酸菌, 整腸剤"},{"c":622241903,"n":"カルボシステインドライシロップ50%","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステインドライシロップ50%, カルボシステインドライシロップ50%「NIG」, カルボシステインドライシロップ５０％「ＮＩＧ」, ムコダイン, 去痰薬"},{"c":620005047,"n":"トラネキサム酸錠250mg","k":"とらんさみん, のどの痛み, トラネキサム酸, トラネキサム酸錠250mg, トラネキサム酸錠250mg「YD」, トラネキサム酸錠２５０ｍｇ「ＹＤ」, トランサミン, 止血剤"},{"c":610463119,"n":"トランサミン散50%","k":"とらんさみん, のどの痛み, トラネキサム酸, トランサミン, トランサミン散50%, トランサミン散５０％, 止血剤"},{"c":620005539,"n":"プランルカストDS10%","k":"おのん, ぜんそく, ぷらんるかすと, オノン, プランルカスト, プランルカストDS10%, プランルカストDS10%「サワイ」, プランルカストＤＳ１０％「サワイ」, 喘息"},{"c":620006955,"n":"ゼスラン小児用シロップ0.03%","k":"ぜすらん, ゼスラン, ゼスラン小児用シロップ0.03%, ゼスラン小児用シロップ０．０３％, ニポラジン, 抗ヒスタミン"},{"c":615101510,"n":"ツムラ抑肝散エキス顆粒","k":"かんしゃく, よくかんさん, ツムラ54, ツムラ抑肝散エキス顆粒, ツムラ抑肝散エキス顆粒(医療用), ツムラ抑肝散エキス顆粒（医療用）, 夜泣き, 抑肝散"},{"c":622071001,"n":"ツインラインNF配合経腸用液","k":"ついんらいん, ツインライン, ツインラインNF配合経腸用液, ツインラインNF配合経腸用液 (混合調製後の内用液として), ツインラインＮＦ配合経腸用液　（混合調製後の内用液として）, 濃厚流動食, 経腸栄養剤"},{"c":620531601,"n":"セレスタミン配合シロップ","k":"せれすたみん, ステロイド, セレスタミン, セレスタミン配合シロップ, 抗ヒスタミン"},{"c":610453119,"n":"ムコダイン錠250mg","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, ムコダイン, ムコダイン錠250mg, ムコダイン錠２５０ｍｇ, 去痰薬"},{"c":620377901,"n":"ジメモルファンリン酸塩シロップ小児用0.25%","k":"あすとみん, じめもるふぁん, せきどめ, アストミン, ジメモルファン, ジメモルファンリン酸塩シロップ小児用0.25%, ジメモルファンリン酸塩シロップ小児用0.25%「TCK」, ジメモルファンリン酸塩シロップ小児用０．２５％「ＴＣＫ」"},{"c":620003943,"n":"クラリスロマイシンDS小児用10% 100mg","k":"くらりすろまいしん, クラリス, クラリスロマイシン, クラリスロマイシンDS小児用10% 100mg, クラリスロマイシンDS小児用10%「タカタ」 100mg, クラリスロマイシンＤＳ小児用１０％「タカタ」　１０0ｍｇ, 抗生剤"},{"c":620005544,"n":"プランルカストドライシロップ10%","k":"おのん, ぜんそく, ぷらんるかすと, オノン, プランルカスト, プランルカストドライシロップ10%, プランルカストドライシロップ10%「AFP」, プランルカストドライシロップ１０％「ＡＦＰ」, 喘息"},{"c":620003636,"n":"モニラック・シロップ65%","k":"もにらっく, らくつろーす, モニラック, モニラック・シロップ65%, モニラック・シロップ６５％, ラクツロース, 便秘薬"},{"c":620006935,"n":"シングレアチュアブル錠5mg","k":"きぷれす, しんぐれあ, もんてるかすと, キプレス, シングレア, シングレアチュアブル錠5mg, シングレアチュアブル錠５ｍｇ, モンテルカスト, 喘息"},{"c":622544901,"n":"モンテルカスト細粒4mg","k":"きぷれす, しんぐれあ, ぜんそく, もんてるかすと, キプレス, シングレア, モンテルカスト, モンテルカスト細粒4mg, モンテルカスト細粒4mg「トーワ」, モンテルカスト細粒４ｍｇ「トーワ」, 喘息"},{"c":620002047,"n":"小児用ムコソルバンDS1.5%","k":"あんぶろきそーる, むこそるばん, アンブロキソール, ムコソルバン, 去痰薬, 小児用ムコソルバンDS1.5%, 小児用ムコソルバンＤＳ１．５％"},{"c":620001188,"n":"単シロップ","k":"単シロップ, 単シロップ「ケンエー」"},{"c":622638901,"n":"オセルタミビルDS3%","k":"おせるたみびる, たみふる, インフルエンザ, オセルタミビル, オセルタミビルDS3%, オセルタミビルDS3%「サワイ」, オセルタミビルＤＳ３％「サワイ」, タミフル"},{"c":620005823,"n":"シングレア細粒4mg","k":"きぷれす, しんぐれあ, もんてるかすと, キプレス, シングレア, シングレア細粒4mg, シングレア細粒４ｍｇ, モンテルカスト, 喘息"},{"c":620006985,"n":"デカドロンエリキシル0.01%","k":"でかどろん, ステロイド, デカドロン, デカドロンエリキシル0.01%, デカドロンエリキシル０．０１％, デキサメタゾン"},{"c":620936201,"n":"d-クロルフェニラミンマレイン酸塩シロップ0.04%","k":"d-クロルフェニラミンマレイン酸塩シロップ0.04%, d-クロルフェニラミンマレイン酸塩シロップ0.04%「トーワ」, ｄ－クロルフェニラミンマレイン酸塩シロップ０．０４％「トーワ」"},{"c":620421101,"n":"ビオスリー配合散","k":"びおすりー, ビオスリー, ビオスリー配合散, 整腸剤, 酪酸菌"},{"c":620003183,"n":"ラックビー微粒N 1%","k":"らっくびー, ビフィズス菌, ラックビー, ラックビー微粒N 1%, ラックビー微粒Ｎ　１％, 整腸剤"},{"c":612370067,"n":"ミヤBM錠","k":"みやびーえむ, ミヤBM, ミヤBM錠, ミヤＢＭ, ミヤＢＭ錠, 整腸剤, 酪酸菌"},{"c":622491001,"n":"カルボシステイン錠250mg","k":"かるぼしすていん, きょたんやく, むこだいん, カルボシステイン, カルボシステイン錠250mg, カルボシステイン錠250mg「JG」, カルボシステイン錠２５０ｍｇ「ＪＧ」, ムコダイン, 去痰薬"},{"c":620945803,"n":"ケトチフェンシロップ0.02%","k":"ケトチフェンシロップ0.02%, ケトチフェンシロップ0.02%「日医工」, ケトチフェンシロップ０．０２％「日医工」"},{"c":620881505,"n":"ラクツロースシロップ65%","k":"もにらっく, らくつろーす, モニラック, ラクツロース, ラクツロースシロップ65%, ラクツロースシロップ65%「NIG」, ラクツロースシロップ６５％「ＮＩＧ」, 便秘薬"}];
+const DETAIL = {"622307001":{"name":"エネーボ配合経腸用液","official":"エネーボ配合経腸用液","cat":"経腸栄養剤（経口・経管両用） / 液剤","alert":"牛乳アレルギー禁忌","bad":["牛乳・乳製品(アレルギー患児)"],"badDesc":"牛乳、乳製品（※牛乳アレルギー患児にはショック・アナフィラキシーのおそれがあるため禁忌）","warn":[["注意","特になし（多量の水での急激な薄めすぎに注意）"]],"good":[["少量のジュース(リンゴ等)","フレーバー調整用果汁（※指定品目・溶解液のみ）"]],"best":[["水","そのまま経口摂取（室温）、水での追飲"]],"notice":"加温する場合は70℃以上の熱湯や直火での直接加熱、冷凍保存を避ける（30〜40℃程度の微温湯で湯煎する）。","reason":"添付文書「禁忌」に牛乳タンパクアレルギー患者への投与禁止（ショック・アナフィラキシーのおそれ）を明記。加温時は30〜40℃の微温湯を指示。","source":"エネーボ配合経腸用液 添付文書"},"620384409":{"name":"カルボシステインシロップ小児用5%","official":"カルボシステインシロップ小児用５％「ＮＩＧ」","cat":"気道粘液調整・粘膜正常化剤（去痰剤） / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。","reason":"添付文書の有効成分（L-カルボシステイン50mg/mL）および性状（褐色シロップ・甘味）に基づく。開栓後は密栓して冷所保存。","source":"カルボシステインシロップ小児用5%「NIG」 添付文書"},"622070901":{"name":"ラコールNF配合経腸用液","official":"ラコールＮＦ配合経腸用液","cat":"経腸栄養剤（経口・経管両用） / 液剤","alert":"牛乳アレルギー禁忌","bad":["牛乳・乳製品(アレルギー患児)"],"badDesc":"牛乳、乳製品（※牛乳アレルギー患児にはショック・アナフィラキシーのおそれがあるため禁忌）","warn":[["注意","特になし（多量の水での急激な薄めすぎに注意）"]],"good":[["少量のジュース(リンゴ等)","フレーバー調整用果汁（※指定品目・溶解液のみ）"]],"best":[["水","そのまま経口摂取（室温）、水での追飲"]],"notice":"加温する場合は70℃以上の熱湯や直火での直接加熱、冷凍保存を避ける（30〜40℃程度の微温湯で湯煎する）。","reason":"添付文書「禁忌」に牛乳たん白アレルギー患者への投与禁止（カゼイン含有のためショック・アナフィラキシーのおそれ）と記載。","source":"ラコールNF配合経腸用液 添付文書"},"622346201":{"name":"ラコールNF配合経腸用半固形剤","official":"ラコールＮＦ配合経腸用半固形剤","cat":"経腸栄養剤 / 半固形剤","alert":"牛乳アレルギー禁忌","bad":["牛乳・乳製品(アレルギー患児)"],"badDesc":"牛乳、乳製品（※牛乳アレルギー患児にはショック・アナフィラキシーのおそれがあるため禁忌）","warn":[["注意","特になし（多量の水での急激な薄めすぎに注意）"]],"good":[["少量のジュース(リンゴ等)","フレーバー調整用果汁（※指定品目・溶解液のみ）"]],"best":[["水","そのまま経口摂取（室温）、水での追飲"]],"notice":"加温する場合は70℃以上の熱湯や直火での直接加熱、冷凍保存を避ける（30〜40℃程度の微温湯で湯煎する）。","reason":"添付文書「禁忌」に牛乳たん白アレルギー患者への投与禁止と記載。半固形製剤のため胃の貯留・運動機能を利用する。","source":"ラコールNF配合経腸用半固形剤 添付文書"},"620002502":{"name":"アスベリンシロップ0.5%","official":"アスベリンシロップ０．５％","cat":"鎮咳剤（咳止め） / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース、アイスクリーム"],["アイスクリーム","服薬補助ゼリー、少量のジュース、アイスクリーム"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース、アイスクリーム"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"懸濁シロップ剤は強い振盪を行うと発泡して正確な秤取が困難になるため、軽く振盪して均一化する。","reason":"添付文書「適用上の注意」に「懸濁液のため軽く振盪して均一化すること。強く振盪すると発泡し秤取困難。他剤配合で沈殿のおそれ」と記載。","source":"アスベリンシロップ0.5% 添付文書"},"622004901":{"name":"カルボシステインシロップ5%","official":"カルボシステインシロップ５％「タカタ」（同フォーム）","cat":"気道粘液調整・粘膜正常化剤（去痰剤） / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。","reason":"添付文書の成分（L-カルボシステイン50mg/mL）および取扱上の注意「開栓後は密栓し冷所に保存」に基づく。","source":"カルボシステインシロップ5%「タカタ」 添付文書"},"621973701":{"name":"カルボシステインDS50%","official":"カルボシステインＤＳ５０％「タカタ」（同フォーム）","cat":"気道粘液調整・粘膜正常化剤（去痰剤） / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"ドライシロップは用時水に懸濁・溶解して服用し、調製後の作り置き放置は避ける。","reason":"添付文書の用法・用量「用時懸濁して経口投与する」および製剤性状（白色の微粒・甘味）に基づく。","source":"カルボシステインDS50%「タカタ」 添付文書"},"622676401":{"name":"イノラス配合経腸用液","official":"イノラス配合経腸用液","cat":"経腸栄養剤（経口・経管両用） / 液剤","alert":"牛乳アレルギー禁忌","bad":["牛乳・乳製品(アレルギー患児)"],"badDesc":"牛乳、乳製品（※牛乳アレルギー患児にはショック・アナフィラキシーのおそれがあるため禁忌）","warn":[["注意","特になし（多量の水での急激な薄めすぎに注意）"]],"good":[["少量のジュース(リンゴ等)","フレーバー調整用果汁（※指定品目・溶解液のみ）"]],"best":[["水","そのまま経口摂取（室温）、水での追飲"]],"notice":"加温する場合は70℃以上の熱湯や直火での直接加熱、冷凍保存を避ける（30〜40℃程度の微温湯で湯煎する）。","reason":"添付文書「禁忌」に牛乳たん白アレルギー患者への投与禁止（カゼインNa・濃縮乳たん白質含有）と記載。加熱は70℃未満の湯煎。","source":"イノラス配合経腸用液 添付文書"},"622813801":{"name":"レボセチリジン塩酸塩シロップ0.05%","official":"レボセチリジン塩酸塩シロップ０．０５％「サワイ」","cat":"持続性選択H1受容体拮抗・アレルギー性疾患治療剤 / シロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"服用後に眠気を催すことがあるため、保護者による安全管理に注意する。","reason":"添付文書「10.2 併用注意」に「アルコール・中枢神経抑制剤により中枢神経抑制作用が増強されるおそれ」と記載。眠気に関する注意あり。","source":"レボセチリジン塩酸塩シロップ0.05%「サワイ」 添付文書"},"620384501":{"name":"カルボシステインシロップ小児用5%","official":"カルボシステインシロップ小児用５％「トーワ」","cat":"気道粘液調整・粘膜正常化剤（去痰剤） / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。","reason":"添付文書の成分（L-カルボシステイン50mg/mL）に基づく。開栓後は密栓して冷所保存。","source":"カルボシステインシロップ小児用5%「トーワ」 添付文書"},"622790601":{"name":"レボセチリジン塩酸塩シロップ0.05%","official":"レボセチリジン塩酸塩シロップ０．０５％「トーワ」","cat":"持続性選択H1受容体拮抗・アレルギー性疾患治療剤 / シロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"光に反応して変色・変質する可能性があるため、外箱・遮光ボトルで密栓保存する。","reason":"添付文書「併用注意」に「アルコールにより中枢神経抑制作用が増強される」と記載。取扱上の注意に「ガラス容器開栓後は遮光保存」と明記。","source":"レボセチリジン塩酸塩シロップ0.05%「トーワ」 添付文書"},"622308201":{"name":"ザイザルシロップ0.05%","official":"ザイザルシロップ０．０５％","cat":"持続性選択H1受容体拮抗・アレルギー性疾患治療剤 / シロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"服用後に眠気を催すことがあるため、保護者による安全管理に注意する。","reason":"添付文書「10.2 併用注意」に「アルコールにより中枢神経抑制作用が増強される可能性がある」と記載。","source":"ザイザルシロップ0.05% 添付文書"},"612220508":{"name":"ムコダインシロップ5%","official":"ムコダインシロップ５％","cat":"気道粘液調整・粘膜正常化剤（去痰剤） / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。","reason":"添付文書「取扱い上の注意」に「開栓後は汚染防止のため使用の都度必ず密栓し冷所に保存」と記載。","source":"ムコダインシロップ5% 添付文書"},"620002510":{"name":"カロナールシロップ2%","official":"カロナールシロップ２％","cat":"小児用解熱鎮痛剤 / シロップ剤","alert":"アセトアミノフェン重複注意 / アルコール併用注意","bad":["アルコール"],"badDesc":"アルコール飲料（※アルコール多量摂取により肝障害・肝毒性のリスクが高まるため避ける）","warn":[["注意","特になし（アセトアミノフェン含有総合感冒薬との併用重複注意）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（※空腹時を避けて服用）"],["ぬるま湯","水、ぬるま湯（※空腹時を避けて服用）"]],"notice":"胃への負担を軽減するため、空腹時を避けて服用させることが望ましい。PTP包装や散剤の過量投与に注意する。","reason":"添付文書の警告・基本注意に「アセトアミノフェン含有他剤との併用による過量投与・重篤な肝障害のおそれ」「空腹時の投与は避けること」と記載。","source":"カロナールシロップ2% 添付文書"},"610407025":{"name":"エンシュア・H","official":"エンシュア・Ｈ","cat":"経腸栄養剤（高カロリー） / 液剤","alert":"","bad":[],"badDesc":"","warn":[["注意","特になし（多量の水での急激な薄めすぎに注意）"]],"good":[["少量のジュース(リンゴ等)","フレーバー調整用果汁（※指定品目・溶解液のみ）"]],"best":[["水","そのまま経口摂取（室温）、水での追飲"]],"notice":"加温する場合は70℃以上の熱湯や直火での直接加熱、冷凍保存を避ける（30〜40℃程度の微温湯で湯煎する）。","reason":"添付文書「14.1 加温は未開缶のまま微温湯で」「20.1 冷凍は避ける、開缶後冷蔵48時間以内」と記載。","source":"エンシュア・H 添付文書"},"622371701":{"name":"オロパタジン塩酸塩顆粒0.5%","official":"オロパタジン塩酸塩顆粒０．５％「トーワ」","cat":"アレルギー性疾患治療剤（抗ヒスタミン薬） / 顆粒剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は火傷や成分変性のリスクがあるため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書の性状（白色結晶性粉末・苦味あり）、用法用量および重要な基本的注意「眠気を催すことがある」に基づく。","source":"オロパタジン塩酸塩顆粒0.5%「トーワ」 添付文書"},"622811201":{"name":"レボセチリジン塩酸塩シロップ0.05%","official":"レボセチリジン塩酸塩シロップ０．０５％「ニプロ」","cat":"持続性選択H1受容体拮抗・アレルギー性疾患治療剤 / シロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"服用後に眠気を催すことがあるため、保護者による安全管理に注意する。","reason":"添付文書「10.2 併用注意」に「アルコール・中枢神経抑制剤により中枢神経抑制作用が増強される可能性」と記載。","source":"レボセチリジン塩酸塩シロップ0.05%「ニプロ」 添付文書"},"620390701":{"name":"アンブロキソール塩酸塩DS小児用1.5%","official":"アンブロキソール塩酸塩ＤＳ小児用１．５％「タカタ」","cat":"気道潤滑去痰剤 / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"ドライシロップは用時水に懸濁・溶解して服用し、調製後の作り置き放置は避ける。","reason":"添付文書の用法・用量「用時溶解して経口投与する」および製剤性状（白色微粒・甘味芳香）に基づく。","source":"アンブロキソール塩酸塩DS小児用1.5%「タカタ」 添付文書"},"613250027":{"name":"エンシュア・リキッド","official":"エンシュア・リキッド","cat":"経腸栄養剤 / 液剤","alert":"","bad":[],"badDesc":"","warn":[["注意","特になし（多量の水での急激な薄めすぎに注意）"]],"good":[["少量のジュース(リンゴ等)","フレーバー調整用果汁（※指定品目・溶解液のみ）"]],"best":[["水","そのまま経口摂取（室温）、水での追飲"]],"notice":"加温する場合は70℃以上の熱湯や直火での直接加熱、冷凍保存を避ける（30〜40℃程度の微温湯で湯煎する）。","reason":"添付文書の取扱い上の注意「冷凍は避ける、開缶後は密閉し冷蔵庫で48時間以内」「直火加温禁止」と記載。","source":"エンシュア・リキッド 添付文書"},"620808104":{"name":"トラネキサム酸シロップ5%","official":"トラネキサム酸シロップ５％「ＮＩＧ」","cat":"抗プラスミン剤（止血・抗炎症・抗アレルギー剤） / シロップ剤","alert":"併用禁忌: トロンビン","bad":[],"badDesc":"","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書「10.1 併用禁忌」に「トロンビン（血栓形成傾向が増大するため併用しないこと）」と記載。取扱い上の注意に「遮光保存」と明記。","source":"トラネキサム酸シロップ5%「NIG」 添付文書"},"620003633":{"name":"メプチンシロップ5μg/mL 0.0005%","official":"メプチンシロップ５μｇ／ｍＬ　０．０００５％","cat":"気管支拡張剤（β2刺激剤） / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース、アイスクリーム"],["アイスクリーム","服薬補助ゼリー、少量のジュース、アイスクリーム"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース、アイスクリーム"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"懸濁シロップ剤は強い振盪を行うと発泡して正確な秤取が困難になるため、軽く振盪して均一化する。","reason":"添付文書「8.2 過度使用で不整脈のおそれ」「10.2 併用注意: カテコールアミン製剤で不整脈・心停止のおそれ」と記載。","source":"メプチンシロップ5μg/mL 添付文書"},"620390201":{"name":"アンブロキソール塩酸塩シロップ小児用0.3%","official":"アンブロキソール塩酸塩シロップ小児用０．３％「タカタ」","cat":"気道潤滑去痰剤 / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。","reason":"添付文書「14.1 薬剤調製時の注意」に「抗生物質を含有するシロップ用細粒との混合により外観変化が生じるため別々に投与すること」と記載。","source":"アンブロキソール塩酸塩シロップ小児用0.3%「タカタ」 添付文書"},"612370066":{"name":"ミヤBM細粒","official":"ミヤＢＭ細粒","cat":"酪酸菌（宮入菌）製剤（整腸剤） / 細粒剤","alert":"生菌製剤(熱湯・アミノフィリン不可)","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温により生菌が死滅・失活するため熱湯との混和は避ける）","warn":[["注意","アミノフィリン、イソニアジド等の特定配合薬剤（配合により変色・着色のおそれ）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"]],"best":[["水","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"],["ぬるま湯","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"]],"notice":"生菌製剤のため吸湿に弱く、高温や湿気を避けて保存する。開封・調製後は速やかに服用させる。","reason":"添付文書「14.1 薬剤調製時の注意」に「アミノフィリン、イソニアジドとの配合により着色することがあるため配合を避ける」と記載。生菌製剤のため熱湯回避。","source":"ミヤBM細粒 添付文書"},"620005540":{"name":"プランルカストDS10%","official":"プランルカストＤＳ１０％「タカタ」","cat":"ロイコトリエン受容体拮抗剤 / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は火傷や成分変性のリスクがあるため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書「10.2 併用注意」に「CYP3A4を阻害する薬剤（イトラコナゾール、エリスロマイシン等）により本剤の血中濃度が上昇するおそれ」と記載。","source":"プランルカストDS10%「タカタ」 添付文書"},"621989901":{"name":"ムコダインDS50%","official":"ムコダインＤＳ５０％","cat":"気道粘液調整・粘膜正常化剤（去痰剤） / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"ドライシロップは用時水に懸濁・溶解して服用し、調製後の作り置き放置は避ける。","reason":"添付文書の用法・用量「用時懸濁して経口投与する」および性状（白色の微粒状）に基づく。","source":"ムコダインDS50% 添付文書"},"620002022":{"name":"カロナール細粒20%","official":"カロナール細粒２０％","cat":"解熱鎮痛剤 / 細粒剤","alert":"アセトアミノフェン重複注意 / アルコール併用注意","bad":["アルコール"],"badDesc":"アルコール飲料（※アルコール多量摂取により肝障害・肝毒性のリスクが高まるため避ける）","warn":[["注意","特になし（アセトアミノフェン含有総合感冒薬との併用重複注意）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（※空腹時を避けて服用）"],["ぬるま湯","水、ぬるま湯（※空腹時を避けて服用）"]],"notice":"胃への負担を軽減するため、空腹時を避けて服用させることが望ましい。PTP包装や散剤の過量投与に注意する。","reason":"添付文書「1. 警告」に「アセトアミノフェン含有他剤との併用による過量投与・重篤な肝障害のおそれ」、「8.6 併用回避」「空腹時投与回避」と記載。","source":"カロナール細粒20% 添付文書"},"622832901":{"name":"モビコール配合内用剤LD 6.8523g","official":"モビコール配合内用剤ＬＤ　６．８５２３ｇ","cat":"慢性便秘症治療薬（浸透圧性下剤） / 散剤（溶解用内用剤）","alert":"","bad":["粉末のまま水なしでの直接服用"],"badDesc":"粉末のまま水なしでの直接服用（※必ず水に溶解して服用すること）","warn":[["注意","特になし（調製後の長期放置）"]],"good":[["少量のジュース(リンゴ等)","リンゴジュース、清涼飲料水（※水で溶解した後に必要に応じて混ぜる）"]],"best":[["水","コップ1/3程度（約60mL）の水に溶解して服用"]],"notice":"必ず1包あたり約60mLの水にしっかりと溶解してから服用させる。調製後は速やかに服用し放置しない。","reason":"添付文書「14.1 薬剤調製時の注意」に「1包あたり約60mLの水に溶解する。溶解後は速やかに服用すること」「20. 取扱い上の注意: 高温を避けて保存」と記載。","source":"モビコール配合内用剤LD 添付文書"},"621073001":{"name":"ワイドシリン細粒20% 200mg","official":"ワイドシリン細粒２０％　２００ｍｇ","cat":"合成ペニシリン製剤（アモキシシリン抗菌薬） / 細粒剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※成分失活や過度な加熱を避ける）","warn":[["注意","特になし（開栓後の吸湿放置）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、少量のジュース（服用直前に混和）"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、少量のジュース（服用直前に混和）"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、少量のジュース（服用直前に混和）"]],"best":[["水","水、ぬるま湯（※用時懸濁して速やかに服用）"],["ぬるま湯","水、ぬるま湯（※用時懸濁して速やかに服用）"]],"notice":"吸湿性が高いため開栓後は密栓して防湿保管する。服用の直前に水で調製・懸濁し、作り置き放置は避ける。","reason":"添付文書「2.2 禁忌: 伝染性単核症の患者（発疹発現頻度が高まるおそれ）」「8.2 抗生物質アレルギー履歴の確認」と記載。","source":"ワイドシリン細粒20% 添付文書"},"622090301":{"name":"アレロック顆粒0.5%","official":"アレロック顆粒０．５％","cat":"アレルギー性疾患治療剤（抗ヒスタミン薬） / 顆粒剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料（※相互作用・中枢抑制増強のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書「8.1 眠気を催すことがある」「3.2 性状: 淡黄赤色顆粒・味は苦い」に基づく。","source":"アレロック顆粒0.5% 添付文書"},"622181501":{"name":"カルボシステインシロップ5%","official":"カルボシステインシロップ５％「ＪＧ」","cat":"気道粘液調整・粘膜正常化剤（去痰剤） / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。","reason":"添付文書の成分（L-カルボシステイン50mg/mL）および取扱上の注意「使用後は密栓して保存すること」に基づく。","source":"カルボシステインシロップ5%「JG」 添付文書"},"621369813":{"name":"プロカテロール塩酸塩シロップ5μg/mL 日医工 0.0005%","official":"プロカテロール塩酸塩シロップ５μｇ／ｍＬ　日医工　０．０００５％","cat":"気管支拡張剤（β2刺激剤） / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース、アイスクリーム"],["アイスクリーム","服薬補助ゼリー、少量のジュース、アイスクリーム"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース、アイスクリーム"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"懸濁シロップ剤は強い振盪を行うと発泡して正確な秤取が困難になるため、軽く振盪して均一化する。","reason":"添付文書「10.2 併用注意: カテコールアミン製剤との併用により不整脈・心停止を起こすおそれ」「キサンチン系・ステロイドで低カリウム血症増強」と記載。","source":"プロカテロール塩酸塩シロップ5μg/mL「日医工」 添付文書"},"620418501":{"name":"ビオフェルミンR散","official":"ビオフェルミンＲ散","cat":"耐性乳酸菌整腸剤 / 散剤","alert":"生菌製剤(熱湯・アミノフィリン不可)","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温により生菌が死滅・失活するため熱湯との混和は避ける）","warn":[["注意","アミノフィリン、イソニアジド等の特定配合薬剤（配合により変色・着色のおそれ）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"]],"best":[["水","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"],["ぬるま湯","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"]],"notice":"生菌製剤のため吸湿に弱く、高温や湿気を避けて保存する。開封・調製後は速やかに服用させる。","reason":"添付文書「14.1 薬剤調製時の注意: アミノフィリン、イソニアジドとの配合により着色することがある」「20. 開封後は湿気を避けて保存」と記載。抗生物質投与時の整腸に使用。","source":"ビオフェルミンR散 添付文書"},"622808401":{"name":"レボセチリジン塩酸塩シロップ0.05%","official":"レボセチリジン塩酸塩シロップ０．０５％「アメル」","cat":"持続性選択H1受容体拮抗・アレルギー性疾患治療剤 / シロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"服用後に眠気を催すことがあるため、保護者による安全管理に注意する。","reason":"添付文書「10.2 併用注意」に「アルコールにより中枢神経抑制作用が増強される可能性がある」と記載。","source":"レボセチリジン塩酸塩シロップ0.05%「アメル」 添付文書"},"620005924":{"name":"インクレミンシロップ5%","official":"インクレミンシロップ５％","cat":"鉄欠乏性貧血治療剤 / シロップ剤","alert":"タンニン酸飲料(お茶等)不可","bad":["緑茶","紅茶","コーヒー(タンニン酸飲料)"],"badDesc":"緑茶、紅茶、コーヒー、ウーロン茶等のタンニン酸を含有する飲料（※鉄の吸収が阻害されるため同時服用を避ける）","warn":[["注意","多量の牛乳、カルシウム飲料（※大量摂取により吸収が低下する可能性があるため時間をおく）"]],"good":[["少量のジュース(リンゴ等)","果汁ジュース（オレンジジュース、リンゴジュース等：ビタミンCが鉄吸収を促進）"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"0℃以下での保存（ソルビトールの結晶析出のおそれ）や光照射を避け、遮光密栓保存する。","reason":"添付文書「10.2 併用注意」に「タンニン酸を含有する食品により不溶性の塩を形成し本剤の吸収が阻害され効果が減弱するおそれ」「制酸剤・抗菌剤等とキレート形成」と記載。","source":"インクレミンシロップ5% 添付文書"},"620002503":{"name":"アスベリンドライシロップ2%","official":"アスベリンドライシロップ２％","cat":"鎮咳剤（咳止め） / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース、アイスクリーム"],["アイスクリーム","服薬補助ゼリー、少量のジュース、アイスクリーム"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース、アイスクリーム"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"懸濁シロップ剤は強い振盪を行うと発泡して正確な秤取が困難になるため、軽く振盪して均一化する。","reason":"添付文書の性状（橙色微粒状、芳香性・甘味あり）および取扱い上の注意「開封後は湿気を避けて保存」に基づく。","source":"アスベリンドライシロップ2% 添付文書"},"620004926":{"name":"アンブロキソール塩酸塩シロップ小児用0.3%","official":"アンブロキソール塩酸塩シロップ小児用０．３％「タイヨー」","cat":"気道潤滑去痰剤 / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。","reason":"添付文書「14.1 薬剤調製時の注意: 抗生物質を含有するシロップ用細粒との混合により外観変化が起こるため別々に投与すること」と記載。","source":"アンブロキソール塩酸塩シロップ小児用0.3%「タイヨー」 添付文書"},"621268301":{"name":"アンブロキソール塩酸塩シロップ小児用0.3%","official":"アンブロキソール塩酸塩シロップ小児用０．３％「トーワ」","cat":"気道潤滑去痰剤 / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。","reason":"添付文書の成分（アンブロキソール塩酸塩3mg/mL）および製剤性状（無色〜微黄色澄明・芳香甘味）に基づく。","source":"アンブロキソール塩酸塩シロップ小児用0.3%「トーワ」 添付文書"},"622412001":{"name":"カルボシステインDS50%","official":"カルボシステインＤＳ５０％「トーワ」","cat":"気道粘液調整・粘膜正常化剤（去痰剤） / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"ドライシロップは用時水に懸濁・溶解して服用し、調製後の作り置き放置は避ける。","reason":"添付文書の用法・用量「用時懸濁して経口投与する」および性状（白色微粒状）に基づく。","source":"カルボシステインDS50%「トーワ」 添付文書"},"620881402":{"name":"ラクツロースシロップ65%","official":"ラクツロースシロップ６５％「タカタ」","cat":"高アンモニア血症・腸管機能改善剤（便秘治療薬） / シロップ剤","alert":"ガラクトース血症禁忌","bad":["ガラクトース・乳糖含有食品"],"badDesc":"ガラクトース・乳糖含有食品（※ガラクトース血症患児には禁忌）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","少量のジュース、服薬補助ゼリー"],["少量のジュース(リンゴ等)","少量のジュース、服薬補助ゼリー"]],"best":[["水","水、ぬるま湯（そのまままたは水等で適宜希釈して服用）"],["ぬるま湯","水、ぬるま湯（そのまままたは水等で適宜希釈して服用）"]],"notice":"開封後は密栓し、高温での保存を避ける（高温下では着色や変質が進むおそれがあるため）。","reason":"添付文書「2. 禁忌: ガラクトース血症の患者（ガラクトース1.0%以下・乳糖1.1%以下含有）」「10.2 併用注意: α-グルコシダーゼ阻害剤」と記載。","source":"ラクツロースシロップ65%「タカタ」 添付文書"},"615100581":{"name":"ヨクイニンエキス錠","official":"ヨクイニンエキス錠「コタロー」","cat":"生薬製剤（皮ふ角化症治療薬） / 錠剤","alert":"","bad":["水なしでの丸のみ（喉づまり・誤嚥リスク）"],"badDesc":"水なしでの丸のみ（喉づまり・誤嚥リスク）","warn":[["注意","特になし（甘草含有他剤との重複注意）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、オブラート"],["オブラート","服薬補助ゼリー、オブラート"]],"best":[["水","水、ぬるま湯（※食前または食間に服用）"],["ぬるま湯","水、ぬるま湯（※食前または食間に服用）"]],"notice":"生薬成分を含有するため湿気や直射日光を避けて保管する。胃内での吸収を考慮し食前または食間に服用させる。","reason":"添付文書「20. 取扱い上の注意: 直射日光を避け湿気を避けて涼しい所に保管。生薬原料のため色調が異なることあり」と記載。","source":"ヨクイニンエキス錠「コタロー」 添付文書"},"620003140":{"name":"オノンドライシロップ10%","official":"オノンドライシロップ１０％","cat":"ロイコトリエン受容体拮抗剤 / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は火傷や成分変性のリスクがあるため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書「10.2 併用注意」に「CYP3A4を阻害する薬剤（イトラコナゾール、エリスロマイシン等）により本剤の代謝が阻害され血中濃度上昇のおそれ」と記載。","source":"オノンドライシロップ10% 添付文書"},"620754601":{"name":"エレンタールP乳幼児用配合内用剤","official":"エレンタールＰ乳幼児用配合内用剤","cat":"新生児・乳幼児用成分栄養剤 / 散剤（溶解用内用剤）","alert":"フェニルケトン尿症禁忌","bad":["アミノ酸代謝異常時等の不適合食品"],"badDesc":"アミノ酸代謝異常時等の不適合食品","warn":[["注意","特になし（多量の水での急激な薄めすぎに注意）"]],"good":[["少量のジュース(リンゴ等)","フレーバー調整用果汁（※指定品目・溶解液のみ）"]],"best":[["水","そのまま経口摂取（室温）、水での追飲"]],"notice":"溶解後は長時間の放置を避け、6時間以内（冷蔵保管時は30時間以内）に使用する。","reason":"添付文書「2.2 禁忌: フェニルケトン尿症等のアミノ酸代謝異常」「14.1 70℃以上の湯で成分分解のおそれ。溶解後6時間以内（冷蔵30時間以内）に使用」と記載。","source":"エレンタールP乳幼児用配合内用剤 添付文書"},"620002500":{"name":"アスベリン散10%","official":"アスベリン散１０％","cat":"鎮咳剤（咳止め） / 散剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース、アイスクリーム"],["アイスクリーム","服薬補助ゼリー、少量のジュース、アイスクリーム"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース、アイスクリーム"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"光や湿気を避けて保存し、定められた用法・用量を守る。","reason":"添付文書の性状（橙色の微粒状散剤、甘味芳香あり）および用法・用量（分包・散剤の換算投与）に基づく。","source":"アスベリン散10% 添付文書"},"622657201":{"name":"フェキソフェナジン塩酸塩DS5%","official":"フェキソフェナジン塩酸塩ＤＳ５％「トーワ」","cat":"アレルギー性疾患治療剤（抗ヒスタミン薬） / ドライシロップ剤","alert":"水酸化アルミニウム等同時服用禁止","bad":[],"badDesc":"","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書「10.2 併用注意」に「水酸化アルミニウム・水酸化マグネシウム含有製剤が本剤を一時的に吸着し吸収量が減少するため同時に服用させない」「エリスロマイシン併用で血漿中濃度上昇」と記載。14.1「調製後の保存は避け速やかに使用」。","source":"フェキソフェナジン塩酸塩DS5%「トーワ」 添付文書"},"622627001":{"name":"シダキュアスギ花粉舌下錠5,000JAU","official":"シダキュアスギ花粉舌下錠５，０００ＪＡＵ","cat":"スギ花粉症減感作療法薬（アレルゲン免疫療法） / 舌下錠","alert":"水なし舌下投与(飲食5分禁止)","bad":["アルコール"],"badDesc":"アルコール飲料（※服用前後2時間は不可）、服用直後の飲食・うがい","warn":[["注意","服用直後（5分以内）の飲食・水分摂取"]],"good":[["服用後5分以上経過した後の水分・飲食","服用後5分以上経過した後の水分・飲食"]],"best":[["水","水なし（舌下に1分間保持した後に飲み込む）"],["水なし(唾液崩壊/舌下)","水なし（舌下に1分間保持した後に飲み込む）"]],"notice":"舌下に1分間保持した後に飲み込み、服用後5分間は飲食やうがいを控える。服用前後2時間は激しい運動や入浴、アルコール摂取を避ける。","reason":"添付文書「6. 用法及び用量: 舌下にて1分間保持後飲み込む。その後5分間はうがいや飲食を控える」「8.2 服用前及び服用後2時間は激しい運動、アルコール摂取、入浴等を避ける（循環動態亢進で吸収促進されアナフィラキシー等のおそれ）」と記載。","source":"シダキュアスギ花粉舌下錠5,000JAU 添付文書"},"622455301":{"name":"ミティキュアダニ舌下錠10,000JAU","official":"ミティキュアダニ舌下錠１０，０００ＪＡＵ","cat":"ダニアレルギー減感作療法薬（アレルゲン免疫療法） / 舌下錠","alert":"水なし舌下投与(飲食5分禁止)","bad":["アルコール"],"badDesc":"アルコール飲料（※服用前後2時間は不可）、服用直後の飲食・うがい","warn":[["注意","服用直後（5分以内）の飲食・水分摂取"]],"good":[["服用後5分以上経過した後の水分・飲食","服用後5分以上経過した後の水分・飲食"]],"best":[["水","水なし（舌下に1分間保持した後に飲み込む）"],["水なし(唾液崩壊/舌下)","水なし（舌下に1分間保持した後に飲み込む）"]],"notice":"舌下に1分間保持した後に飲み込み、服用後5分間は飲食やうがいを控える。服用前後2時間は激しい運動や入浴、アルコール摂取を避ける。","reason":"添付文書「6. 用法及び用量: 舌下にて1分間保持後飲み込む。その後5分間はうがいや飲食を控える」「8.2 服用前及び服用後2時間は激しい運動、アルコール摂取、入浴等を避ける」と記載。","source":"ミティキュアダニ舌下錠10,000JAU 添付文書"},"620395001":{"name":"メジコン配合シロップ","official":"メジコン配合シロップ","cat":"鎮咳去痰剤 / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース、アイスクリーム"],["アイスクリーム","服薬補助ゼリー、少量のジュース、アイスクリーム"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース、アイスクリーム"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"懸濁シロップ剤は強い振盪を行うと発泡して正確な秤取が困難になるため、軽く振盪して均一化する。","reason":"添付文書「10.2 併用注意」に「選択的MAO-B阻害剤との併用でセロトニン症候群のおそれ」「CYP2D6阻害薬・SSRI併用」「20. 取扱い上の注意: 光により退色するため外箱開封後は遮光保存」と記載。","source":"メジコン配合シロップ 添付文書"},"620008745":{"name":"ムコサールドライシロップ1.5%","official":"ムコサールドライシロップ１．５％","cat":"気道潤滑去痰剤（アンブロキソール塩酸塩） / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は火傷や成分変性のリスクがあるため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書の用法・用量「用時溶解して経口投与する」および性状（白色〜微黄色の粒状、ヨーグルト様のにおい、甘味あり）に基づく。","source":"ムコサールドライシロップ1.5% 添付文書"},"620383801":{"name":"カルボシステイン錠250mg","official":"カルボシステイン錠２５０ｍｇ「トーワ」","cat":"気道粘液調整・粘膜正常化剤（去痰剤） / フィルムコーティング錠","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"PTP包装からの誤飲に注意し、シートから取り出して服用させる。","reason":"添付文書「14.1 薬剤交付時の注意」にPTP誤飲注意。通常は水またはぬるま湯で服用。","source":"カルボシステイン錠250mg「トーワ」添付文書"},"620007001":{"name":"トランサミンシロップ5%","official":"トランサミンシロップ５％","cat":"抗プラスミン剤 / シロップ剤","alert":"併用禁忌: トロンビン","bad":[],"badDesc":"","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書において併用禁忌（トロンビン）が指定されており、通常は水などで服用する。","source":"トランサミンシロップ5%添付文書"},"621641302":{"name":"マルツエキス分包","official":"マルツエキス分包（高田）","cat":"麦芽糖製剤（緩下剤） / 糊状液剤（分包）","alert":"","bad":[],"badDesc":"","warn":[["注意","開封後の長期放置（カビ発育防止）"]],"good":[["ぬるま湯","ぬるま湯、白湯、調製ミルク"],["白湯","ぬるま湯、白湯、調製ミルク"],["調製ミルク","ぬるま湯、白湯、調製ミルク"]],"best":[["ぬるま湯","温かい白湯、ミルク（※微温湯やミルクに溶かして服用）"],["白湯","温かい白湯、ミルク（※微温湯やミルクに溶かして服用）"]],"notice":"麦芽糖の緩やかな発酵作用で排便を促すため、開封後はカビ防止のためすぐに使い切る。","reason":"麦芽糖のゆるやかな発酵作用で排便を促す製剤であり、微温湯やミルクに溶かして服用される。","source":"400186_3272001X1062_1_03（マルツエキス添付文書）"},"620002152":{"name":"メプチンドライシロップ0.005%","official":"メプチンドライシロップ０．００５％","cat":"気管支拡張剤 / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース、アイスクリーム"],["アイスクリーム","服薬補助ゼリー、少量のジュース、アイスクリーム"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース、アイスクリーム"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"懸濁シロップ剤は強い振盪を行うと発泡して正確な秤取が困難になるため、軽く振盪して均一化する。","reason":"添付文書にて「溶解後はできるだけ速やかに使用すること」「湿気により凝集及び着色するおそれ」と記載されているため。","source":"180078_2259004R2024_1_11（メプチンドライシロップ添付文書）"},"622539901":{"name":"モンテルカスト細粒4mg","official":"モンテルカスト細粒４ｍｇ「タカタ」","cat":"ロイコトリエン受容体拮抗薬 / 細粒剤","alert":"調製後15分以内服用","bad":["室温を超える温かい食物・温かい飲み物"],"badDesc":"室温を超える温かい食物・温かい飲み物（※成分安定性が低下するため避ける）","warn":[],"good":[["アイスクリーム","スプーン1杯程度の柔らかい食物（アイスクリーム、ヨーグルト、りんごペースト等：室温以下）"],["ヨーグルト","スプーン1杯程度の柔らかい食物（アイスクリーム、ヨーグルト、りんごペースト等：室温以下）"]],"best":[["水","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"],["調製ミルク(室温以下)","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"],["母乳","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"]],"notice":"光に非常に不安定なため服用の直前まで開封しない。調製（混和）後は15分以内に服用し、残りの再分包や保存は行わない。","reason":"添付文書に「室温以下の柔らかい食物、調製ミルク又は母乳と混ぜて15分以内に服用すること」「光に不安定なため準備ができるまで開封しない」と明記されているため。","source":"400186_4490026C1129_1_05（モンテルカスト細粒4mg「タカタ」添付文書）"},"620390101":{"name":"小児用ムコソルバンシロップ0.3%","official":"小児用ムコソルバンシロップ０．３％","cat":"気道潤滑去痰剤 / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。 極端な低温（冷やしすぎ）では添加剤の結晶が析出することがあるため保管温度に注意する。","reason":"添付文書に「低温下で添加剤の結晶が析出することがあるので保管に注意」と記載されているため。","source":"小児用ムコソルバンシロップ0.3%添付文書"},"622705301":{"name":"レボセチリジン塩酸塩DS0.5%","official":"レボセチリジン塩酸塩ＤＳ０．５％「タカタ」","cat":"持続性選択H1受容体拮抗・アレルギー性疾患治療剤 / ドライシロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"服用後に眠気を催すことがあるため、保護者による安全管理に注意する。","reason":"添付文書の併用注意に「アルコール：中枢神経抑制作用が増強される可能性がある」と記載されているため。","source":"400186_4490028R1058_1_02（レボセチリジン塩酸塩DS0.5%「タカタ」添付文書）"},"617140012":{"name":"単シロップ","official":"単シロップ","cat":"調剤用矯味・甘味剤 / シロップ剤","alert":"対象外(添付文書未収録)","bad":[],"badDesc":"対象外（添付文書PDF未収録のため記載なし）","warn":[["注意","対象外（添付文書PDF未収録のため記載なし）"]],"good":[],"best":[],"notice":"ノートブックのソースに本薬剤の添付文書PDFが含まれていないため、情報の安全性を考慮し外部知識による記載を削除・除外しました。","reason":"ノートブックのソースに本薬剤の添付文書PDFが含まれていないため、情報の安全性を考慮し外部知識による記載を削除・除外しました。","source":"（添付文書ソースなし）"},"621369806":{"name":"プロカテロール塩酸塩シロップ5μg/mL 0.0005%","official":"プロカテロール塩酸塩シロップ５μｇ／ｍＬ「日新」　０．０００５％","cat":"気管支拡張剤 / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース、アイスクリーム"],["アイスクリーム","服薬補助ゼリー、少量のジュース、アイスクリーム"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース、アイスクリーム"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"懸濁シロップ剤は強い振盪を行うと発泡して正確な秤取が困難になるため、軽く振盪して均一化する。","reason":"添付文書に「外箱開封後は遮光して保存すること」と取扱い上の注意が記載されているため。","source":"530113_2259004Q1200_2_05（プロカテロール塩酸塩シロップ5μg/mL「日新」添付文書）"},"622338401":{"name":"オロパタジン塩酸塩OD錠5mg","official":"オロパタジン塩酸塩ＯＤ錠５ｍｇ「トーワ」","cat":"アレルギー性疾患治療剤 / 口腔内崩壊錠（OD錠）","alert":"","bad":[],"badDesc":"","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","少量のジュース、服薬補助ゼリー"],["少量のジュース(リンゴ等)","少量のジュース、服薬補助ゼリー"]],"best":[["水","水なし（唾液で崩壊させて服用）、水、ぬるま湯"],["ぬるま湯","水なし（唾液で崩壊させて服用）、水、ぬるま湯"],["水なし(唾液崩壊/舌下)","水なし（唾液で崩壊させて服用）、水、ぬるま湯"]],"notice":"PTPシート誤飲防止のため必ずシートから取り出して服用させる。唾液のみで服用する場合は舌の上で崩壊後、唾液とともに飲み込む。","reason":"添付文書に「本剤は舌の上にのせて唾液を浸潤させると崩壊するため、水なしで服用可能である。また、水で服用することもできる」と記載されているため。","source":"オロパタジン塩酸塩OD錠5mg「トーワ」添付文書"},"620004620":{"name":"リンデロンシロップ0.01%","official":"リンデロンシロップ０．０１％","cat":"合成副腎皮質ホルモン剤 / シロップ剤","alert":"","bad":[],"badDesc":"","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書において併用禁忌（デスモプレシン）が指定されており、遮光保存が指定されているため。","source":"リンデロンシロップ0.01%添付文書"},"620383101":{"name":"カルボシステイン錠250mg","official":"カルボシステイン錠２５０ｍｇ「サワイ」","cat":"気道粘液調整・粘膜正常化剤 / フィルムコーティング錠","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"PTP包装からの誤飲に注意し、シートから取り出して服用させる。","reason":"添付文書にPTPシート誤飲注意が記載されており、通常の水またはぬるま湯で服用する。","source":"カルボシステイン錠250mg「サワイ」添付文書"},"620005106":{"name":"ペリアクチンシロップ0.04%","official":"ペリアクチンシロップ０．０４％","cat":"抗アレルギー剤 / シロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"服用後に眠気を催すことがあるため、保護者による安全管理に注意する。","reason":"添付文書の併用注意に「アルコール：両薬剤とも中枢神経抑制作用を有するため、併用により鎮静作用が増強される」と明記されているため。","source":"ペリアクチンシロップ0.04%添付文書"},"610462002":{"name":"タミフルドライシロップ3%","official":"タミフルドライシロップ３％","cat":"抗インフルエンザウイルス剤 / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※成分失活や過度な加熱を避ける）","warn":[["注意","特になし（開栓後の吸湿放置）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、少量のジュース（服用直前に混和）"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、少量のジュース（服用直前に混和）"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、少量のジュース（服用直前に混和）"]],"best":[["水","水、ぬるま湯（※用時懸濁して速やかに服用）"],["ぬるま湯","水、ぬるま湯（※用時懸濁して速やかに服用）"]],"notice":"吸湿性が高いため開栓後は密栓して防湿保管する。服用の直前に水で調製・懸濁し、作り置き放置は避ける。","reason":"添付文書に「吸湿性があるので、開栓後は密栓し、湿気を避けて保存すること」「用時懸濁して経口投与する」と記載されているため。","source":"450045_6250021R1024_1_31（タミフルドライシロップ3%添付文書）"},"620384402":{"name":"カルボシステインシロップ小児用5%","official":"カルボシステインシロップ小児用５％「テバ」","cat":"気道粘液調整・粘膜正常化剤 / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。","reason":"添付文書に基づき、使用後は密栓して保管し、水などで服用する。","source":"カルボシステインシロップ小児用5%添付文書"},"620005821":{"name":"キプレス細粒4mg","official":"キプレス細粒４ｍｇ","cat":"ロイコトリエン受容体拮抗剤 / 細粒剤","alert":"調製後15分以内服用","bad":["室温を超える温かい食物・温かい飲み物"],"badDesc":"室温を超える温かい食物・温かい飲み物（※成分安定性が低下するため避ける）","warn":[],"good":[["アイスクリーム","スプーン1杯程度の柔らかい食物（アイスクリーム、ヨーグルト、りんごペースト等：室温以下）"],["ヨーグルト","スプーン1杯程度の柔らかい食物（アイスクリーム、ヨーグルト、りんごペースト等：室温以下）"]],"best":[["水","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"],["調製ミルク(室温以下)","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"],["母乳","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"]],"notice":"光に非常に不安定なため服用の直前まで開封しない。調製（混和）後は15分以内に服用し、残りの再分包や保存は行わない。","reason":"添付文書に「室温以下の柔らかい食物、調製ミルク又は母乳と混ぜて15分以内に服用すること」「光に不安定なため準備ができるまで開封せず放置しない」と明記されているため。","source":"231099_4490026C1021_2_04（キプレス細粒4mg添付文書）"},"620754301":{"name":"エレンタール配合内用剤","official":"エレンタール配合内用剤","cat":"成分栄養剤 / 経腸栄養粉末剤","alert":"","bad":[],"badDesc":"","warn":[["注意","特になし（多量の水での急激な薄めすぎに注意）"]],"good":[["少量のジュース(リンゴ等)","フレーバー調整用果汁（※指定品目・溶解液のみ）"]],"best":[["水","そのまま経口摂取（室温）、水での追飲"]],"notice":"溶解後は長時間の放置を避け、6時間以内（冷蔵保管時は30時間以内）に使用する。","reason":"添付文書に「内袋を開封後は、光を遮り気密容器に保存すること」と記載されているため。","source":"111890_3259103B1036_2_06（エレンタール配合内用剤添付文書）"},"622014201":{"name":"アレロックOD錠5 5mg","official":"アレロックＯＤ錠５　５ｍｇ","cat":"アレルギー性疾患治療剤 / 口腔内崩壊錠（OD錠）","alert":"アルコール併用厳禁","bad":[],"badDesc":"","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","少量のジュース、服薬補助ゼリー"],["少量のジュース(リンゴ等)","少量のジュース、服薬補助ゼリー"]],"best":[["水","水なし（唾液で崩壊させて服用）、水、ぬるま湯"],["ぬるま湯","水なし（唾液で崩壊させて服用）、水、ぬるま湯"],["水なし(唾液崩壊/舌下)","水なし（唾液で崩壊させて服用）、水、ぬるま湯"]],"notice":"PTPシート誤飲防止のため必ずシートから取り出して服用させる。唾液のみで服用する場合は舌の上で崩壊後、唾液とともに飲み込む。","reason":"添付文書に「舌の上にのせて唾液を浸潤させると崩壊するため、水なしで服用可能である。また、水で服用することもできる」と記載されているため。","source":"アレロックOD錠2.5/5添付文書"},"620006886":{"name":"キプレスチュアブル錠5mg","official":"キプレスチュアブル錠５ｍｇ","cat":"ロイコトリエン受容体拮抗剤 / チュアブル錠","alert":"","bad":[],"badDesc":"","warn":[["注意","特になし（噛まずに丸飲みすることは避ける）"]],"good":[["少量の水","少量の水"]],"best":[["水","口中で溶かすか、かみくだいて服用（水なしでも服用可能）"],["水なし(唾液崩壊/舌下)","口中で溶かすか、かみくだいて服用（水なしでも服用可能）"]],"notice":"喉に詰まらせないよう、噛まずにそのまま丸飲みせず、必ず口中で溶かすか噛み砕いて服用させる。","reason":"添付文書に「本剤は、口中で溶かすか、かみくだいて服用すること」「食事の有無にかかわらず投与できる」と記載されているため。","source":"231099_4490026F1044_2_04（キプレスチュアブル錠5mg添付文書）"},"620937605":{"name":"シプロヘプタジン塩酸塩シロップ0.04%","official":"シプロヘプタジン塩酸塩シロップ０．０４％「ＮＩＧ」","cat":"抗アレルギー剤 / シロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料（※相互作用・中枢抑制増強のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書の併用注意に「アルコール：両薬剤とも中枢神経抑制作用を有するため、併用により鎮静作用が増強される」と明記されているため。","source":"シプロヘプタジン塩酸塩シロップ0.04%「NIG」添付文書"},"622539801":{"name":"モンテルカストチュアブル錠5mg","official":"モンテルカストチュアブル錠５ｍｇ「タカタ」","cat":"ロイコトリエン受容体拮抗薬 / チュアブル錠","alert":"","bad":[],"badDesc":"","warn":[["注意","特になし（噛まずに丸飲みすることは避ける）"]],"good":[["少量の水","少量の水"]],"best":[["水","口中で溶かすか、かみくだいて服用（水なしでも服用可能）"],["水なし(唾液崩壊/舌下)","口中で溶かすか、かみくだいて服用（水なしでも服用可能）"]],"notice":"喉に詰まらせないよう、噛まずにそのまま丸飲みせず、必ず口中で溶かすか噛み砕いて服用させる。","reason":"添付文書に「本剤は、口中で溶かすか、かみくだいて服用すること」「食事の有無にかかわらず投与できる」と記載されているため。","source":"400186_4490026F1222_1_05（モンテルカストチュアブル錠5mg「タカタ」添付文書）"},"620006831":{"name":"アリメジンシロップ0.05%","official":"アリメジンシロップ０．０５％","cat":"抗ヒスタミン剤 / シロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"服用後に眠気を催すことがあるため、保護者による安全管理に注意する。","reason":"添付文書の併用注意に「アルコール：相互に作用を増強する」と記載されているため。","source":"650037_4413003Q1037_3_03（アリメジンシロップ0.05%添付文書）"},"622546701":{"name":"インチュニブ錠1mg","official":"インチュニブ錠１ｍｇ","cat":"注意欠陥多動性障害（ADHD）治療剤 / 徐放錠","alert":"噛み砕き厳禁(徐放錠)","bad":[],"badDesc":"特になし（高脂肪食との同期待ち合わせ注意）","warn":[["注意","高脂溶性・高脂肪食（※薬剤の吸収に影響を与える可能性があるため）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー"]],"best":[["水","水（※砕いたり、割ったり、かみくだいたりせず丸ごと服用）"]],"notice":"徐放性製剤のため、噛み砕いたり、割ったり、粉砕したりして服用しない（徐放性が損なわれ血中濃度が急上昇するリスクがあるため）。","reason":"本剤は徐放性製剤であり、砕いたり噛み砕いたりして服用すると薬物放出挙動が変化するため、そのまま水で服用する必要がある。","source":"インチュニブ錠1mg・3mg添付文書"},"620002023":{"name":"カロナール錠200 200mg","official":"カロナール錠２００　２００ｍｇ","cat":"解熱鎮痛剤 / 錠剤（割線入り）","alert":"アセトアミノフェン重複注意 / アルコール併用注意","bad":["アルコール"],"badDesc":"アルコール飲料（※アルコール多量摂取により肝障害・肝毒性のリスクが高まるため避ける）","warn":[["注意","特になし（アセトアミノフェン含有総合感冒薬との併用重複注意）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（※空腹時を避けて服用）"],["ぬるま湯","水、ぬるま湯（※空腹時を避けて服用）"]],"notice":"胃への負担を軽減するため、空腹時を避けて服用させることが望ましい。PTP包装や散剤の過量投与に注意する。","reason":"添付文書に「アルコール多量常飲者がアセトアミノフェンを服用したところ肝不全を起こしたとの報告がある」「空腹時の投与は避けさせることが望ましい」と記載されているため。","source":"172190_1141007F1063_5_07（カロナール錠200添付文書）"},"620420001":{"name":"ビオフェルミン配合散","official":"ビオフェルミン配合散","cat":"乳酸菌整腸剤 / 散剤","alert":"生菌製剤(熱湯・アミノフィリン不可)","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温により生菌が死滅・失活するため熱湯との混和は避ける）","warn":[["注意","アミノフィリン、イソニアジド等の特定配合薬剤（配合により変色・着色のおそれ）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"]],"best":[["水","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"],["ぬるま湯","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"]],"notice":"生菌製剤のため吸湿に弱く、高温や湿気を避けて保存する。開封・調製後は速やかに服用させる。","reason":"添付文書に「アミノフィリン、イソニアジドとの配合により着色することがあるので配合をさけることが望ましい」と記載されているため。","source":"ビオフェルミン配合散添付文書"},"622241903":{"name":"カルボシステインドライシロップ50%","official":"カルボシステインドライシロップ５０％「ＮＩＧ」","cat":"気道粘液調整・粘膜正常化剤 / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"ドライシロップは用時水に懸濁・溶解して服用し、調製後の作り置き放置は避ける。 開栓後は密栓して冷暗所に保管し、細菌汚染や長時間の放置を避ける。","reason":"添付文書の適用上の注意に「懸濁液剤として調剤しないこと」「懸濁後に速やかに服用するように指導すること」と明記されているため。","source":"カルボシステインドライシロップ50%「NIG」添付文書"},"620005047":{"name":"トラネキサム酸錠250mg","official":"トラネキサム酸錠２５０ｍｇ「ＹＤ」","cat":"抗プラスミン剤 / 素錠","alert":"併用禁忌: トロンビン","bad":[],"badDesc":"","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書において併用禁忌（トロンビン）が指定されており、通常は水などで服用する。","source":"830001_3327002F1169_1_07（トラネキサム酸錠250mg「YD」添付文書）"},"610463119":{"name":"トランサミン散50%","official":"トランサミン散５０％","cat":"抗プラスミン剤 / 散剤","alert":"併用禁忌: トロンビン","bad":[],"badDesc":"","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書において併用禁忌（トロンビン）が指定されており、通常は水などで服用する。","source":"トランサミン散50%添付文書"},"620005539":{"name":"プランルカストDS10%","official":"プランルカストＤＳ１０％「サワイ」","cat":"ロイコトリエン受容体拮抗剤 / ドライシロップ剤","alert":"","bad":[],"badDesc":"","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書に「用時懸濁して経口投与する」と用法・用量が指定されているため。","source":"プランルカストDS10%「サワイ」添付文書"},"620006955":{"name":"ゼスラン小児用シロップ0.03%","official":"ゼスラン小児用シロップ０．０３％","cat":"アレルギー性疾患治療剤 / シロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"服用後に眠気を催すことがあるため、保護者による安全管理に注意する。","reason":"添付文書に「アルコール：眠気等があらわれることがあるので、アルコール含有清涼飲料水等の摂取に注意すること」「誤飲を避けるため保管・取扱いに十分注意」と記載されているため。","source":"100898_4413004Q1058_1_07（ゼスラン小児用シロップ0.03%添付文書）"},"615101510":{"name":"ツムラ抑肝散エキス顆粒","official":"ツムラ抑肝散エキス顆粒（医療用）","cat":"漢方製剤 / 顆粒剤","alert":"","bad":["水なしでの丸のみ（喉づまり・誤嚥リスク）"],"badDesc":"水なしでの丸のみ（喉づまり・誤嚥リスク）","warn":[["注意","特になし（甘草含有他剤との重複注意）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、オブラート"],["オブラート","服薬補助ゼリー、オブラート"]],"best":[["水","水、ぬるま湯（※食前または食間に服用）"],["ぬるま湯","水、ぬるま湯（※食前または食間に服用）"]],"notice":"生薬成分を含有するため湿気や直射日光を避けて保管する。胃内での吸収を考慮し食前または食間に服用させる。","reason":"添付文書に「通常、成人1日7.5gを2~3回に分割し、食前又は食間に経口投与する」「カンゾウが含まれているので重複に留意」と記載されているため。","source":"ツムラ抑肝散エキス顆粒(医療用)添付文書"},"622071001":{"name":"ツインラインNF配合経腸用液","official":"ツインラインＮＦ配合経腸用液　（混合調製後の内用液として）","cat":"消化態経腸栄養剤 / 経腸用液剤（2液混合）","alert":"","bad":[],"badDesc":"","warn":[["注意","特になし（多量の水での急激な薄めすぎに注意）"]],"good":[["少量のジュース(リンゴ等)","フレーバー調整用果汁（※指定品目・溶解液のみ）"]],"best":[["水","そのまま経口摂取（室温）、水での追飲"]],"notice":"80℃以上の高温加温や静脈内投与、凍結を避ける。投与直前にA液とB液を混合し、12時間以内に投与を完了する。","reason":"添付文書に「加温する場合は高温（80℃以上）を避け未開封湯煎」「直前にA液・B液を混合し12時間以内に終了」「静脈内へは投与しない」と明記されているため。","source":"130589_3259117S1020_1_04（ツインラインNF配合経腸用液添付文書）"},"620531601":{"name":"セレスタミン配合シロップ","official":"セレスタミン配合シロップ","cat":"副腎皮質ホルモン・抗ヒスタミン配合剤 / シロップ剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"光に反応して変色・変質する可能性があるため、外箱・遮光ボトルで密栓保存する。","reason":"添付文書にてデスモプレシン併用禁忌、および「併用注意：アルコール。クロルフェニラミンマレイン酸塩の中枢神経抑制作用により作用増強」と記載されているため。","source":"400186_2459100F1162_2_12（セレスタミン配合シロップ添付文書）"},"610453119":{"name":"ムコダイン錠250mg","official":"ムコダイン錠２５０ｍｇ","cat":"気道粘液調整・粘膜正常化剤 / フィルムコーティング錠","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"PTP包装からの誤飲に注意し、シートから取り出して服用させる。","reason":"添付文書にPTPシート誤飲注意が記載されており、通常の水またはぬるま湯で服用する。","source":"231099_2233002F1174_2_03（ムコダイン錠250mg添付文書）"},"620377901":{"name":"ジメモルファンリン酸塩シロップ小児用0.25%","official":"ジメモルファンリン酸塩シロップ小児用０．２５％「ＴＣＫ」","cat":"非麻薬性鎮咳剤 / シロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※熱湯での服薬は避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース、アイスクリーム"],["アイスクリーム","服薬補助ゼリー、少量のジュース、アイスクリーム"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース、アイスクリーム"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"懸濁シロップ剤は強い振盪を行うと発泡して正確な秤取が困難になるため、軽く振盪して均一化する。","reason":"添付文書に「冷所で保存後、振盪することにより瓶内部に黄色様物質が付着することがあるが成分含量に影響はない。常温保存が望ましい」と記載されているため。","source":"400278_2229001Q1070_1_02（ジメモルファンリン酸塩シロップ小児用0.25%「TCK」添付文書）"},"620003943":{"name":"クラリスロマイシンDS小児用10% 100mg","official":"クラリスロマイシンＤＳ小児用１０％「タカタ」　１０0ｍｇ","cat":"マクロライド系抗生物質製剤 / ドライシロップ剤","alert":"酸性飲料厳禁(苦味発現)","bad":["オレンジジュース","スポーツ飲料","酸性飲料"],"badDesc":"オレンジジュース、スポーツ飲料、果汁飲料、乳酸菌飲料等の酸性飲料（※コーティングが溶けて強い苦味が発現するため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（チョコ味・イチゴ味等）、アイスクリーム、プリン"],["アイスクリーム","服薬補助ゼリー（チョコ味・イチゴ味等）、アイスクリーム、プリン"],["プリン","服薬補助ゼリー（チョコ味・イチゴ味等）、アイスクリーム、プリン"]],"best":[["水","水、牛乳（※用時懸濁して服用）"]],"notice":"コーティング粒子を保護するため、服用直前に懸濁し、懸濁後の長期放置や作り置きは避ける。","reason":"添付文書に「酸性飲料（オレンジジュース、スポーツ飲料等）で服用することは避けることが望ましい。苦味が発現することがある」と明記されているため。","source":"400186_6149003F1112_1_24（クラリスロマイシンDS小児用10%「タカタ」添付文書）"},"620005544":{"name":"プランルカストドライシロップ10%","official":"プランルカストドライシロップ１０％「ＡＦＰ」","cat":"ロイコトリエン受容体拮抗剤 / ドライシロップ剤","alert":"","bad":[],"badDesc":"","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書に「用時懸濁して経口投与する」と用法・用量が指定されているため。","source":"530258_4490017R1041_1_11（プランルカストドライシロップ10%「AFP」添付文書）"},"620003636":{"name":"モニラック・シロップ65%","official":"モニラック・シロップ６５％","cat":"生理的腸管機能改善・高アンモニア血症用剤 / シロップ剤","alert":"ガラクトース血症禁忌","bad":["ガラクトース・乳糖含有食品"],"badDesc":"ガラクトース・乳糖含有食品（※ガラクトース血症患児には禁忌）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","少量のジュース、服薬補助ゼリー"],["少量のジュース(リンゴ等)","少量のジュース、服薬補助ゼリー"]],"best":[["水","水、ぬるま湯（そのまままたは水等で適宜希釈して服用）"],["ぬるま湯","水、ぬるま湯（そのまままたは水等で適宜希釈して服用）"]],"notice":"開封後は密栓し、高温での保存を避ける（高温下では着色や変質が進むおそれがあるため）。","reason":"添付文書に「ガラクトース血症の患者には禁忌」「着色度が進むことがあるので高温を避けて保存」と記載されているため。","source":"730119_3999001Q2058_2_02（モニラック・シロップ65%添付文書）"},"620006935":{"name":"シングレアチュアブル錠5mg","official":"シングレアチュアブル錠５ｍｇ","cat":"ロイコトリエン受容体拮抗薬 / チュアブル錠","alert":"","bad":[],"badDesc":"","warn":[["注意","特になし（噛まずに丸飲みすることは避ける）"]],"good":[["少量の水","少量の水"]],"best":[["水","口中で溶かすか、かみくだいて服用（水なしでも服用可能）"],["水なし(唾液崩壊/舌下)","口中で溶かすか、かみくだいて服用（水なしでも服用可能）"]],"notice":"喉に詰まらせないよう、噛まずにそのまま丸飲みせず、必ず口中で溶かすか噛み砕いて服用させる。","reason":"添付文書に「本剤は、口中で溶かすか、かみくだいて服用すること」「食事の有無にかかわらず投与できる」と記載されているため。","source":"シングレアチュアブル錠5mg添付文書"},"622544901":{"name":"モンテルカスト細粒4mg","official":"モンテルカスト細粒４ｍｇ「トーワ」","cat":"ロイコトリエン受容体拮抗薬 / 細粒剤","alert":"調製後15分以内服用","bad":["室温を超える温かい食物・温かい飲み物"],"badDesc":"室温を超える温かい食物・温かい飲み物（※成分安定性が低下するため避ける）","warn":[],"good":[["アイスクリーム","スプーン1杯程度の柔らかい食物（アイスクリーム、ヨーグルト、りんごペースト等：室温以下）"],["ヨーグルト","スプーン1杯程度の柔らかい食物（アイスクリーム、ヨーグルト、りんごペースト等：室温以下）"]],"best":[["水","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"],["調製ミルク(室温以下)","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"],["母乳","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"]],"notice":"光に非常に不安定なため服用の直前まで開封しない。調製（混和）後は15分以内に服用し、残りの再分包や保存は行わない。","reason":"添付文書に「室温以下の柔らかい食物、調製ミルク又は母乳と混ぜて15分以内に服用すること」「光に不安定なため準備ができるまで開封しない」と明記されているため。","source":"モンテルカスト細粒4mg「トーワ」添付文書"},"620002047":{"name":"小児用ムコソルバンDS1.5%","official":"小児用ムコソルバンＤＳ１．５％","cat":"気道潤滑去痰剤 / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"ドライシロップは用時水に懸濁・溶解して服用し、調製後の作り置き放置は避ける。","reason":"添付文書に「用時溶解して経口投与する」「外箱開封後は湿気に注意して保存する」と記載されているため。","source":"小児用ムコソルバンDS1.5%添付文書"},"620001188":{"name":"単シロップ","official":"単シロップ「ケンエー」","cat":"調剤用矯味・甘味剤 / シロップ剤","alert":"対象外(添付文書未収録)","bad":[],"badDesc":"対象外（添付文書PDF未収録のため記載なし）","warn":[["注意","対象外（添付文書PDF未収録のため記載なし）"]],"good":[],"best":[],"notice":"ノートブックのソースに本薬剤の添付文書PDFが含まれていないため、情報の安全性を考慮し外部知識による記載を削除・除外しました。","reason":"ノートブックのソースに本薬剤の添付文書PDFが含まれていないため、情報の安全性を考慮し外部知識による記載を削除・除外しました。","source":"（添付文書ソースなし）"},"622638901":{"name":"オセルタミビルDS3%","official":"オセルタミビルＤＳ３％「サワイ」","cat":"抗インフルエンザウイルス剤 / ドライシロップ剤","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※成分失活や過度な加熱を避ける）","warn":[["注意","特になし（開栓後の吸湿放置）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、少量のジュース（服用直前に混和）"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、少量のジュース（服用直前に混和）"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、少量のジュース（服用直前に混和）"]],"best":[["水","水、ぬるま湯（※用時懸濁して速やかに服用）"],["ぬるま湯","水、ぬるま湯（※用時懸濁して速やかに服用）"]],"notice":"吸湿性が高いため開栓後は密栓して防湿保管する。服用の直前に水で調製・懸濁し、作り置き放置は避ける。","reason":"添付文書に「吸湿性があるので、開栓後は密栓し、湿気を避けて保存すること」「用時懸濁して経口投与する」と記載されているため。","source":"オセルタミビルDS3%「サワイ」添付文書"},"620005823":{"name":"シングレア細粒4mg","official":"シングレア細粒４ｍｇ","cat":"ロイコトリエン受容体拮抗薬 / 細粒剤","alert":"調製後15分以内服用","bad":["室温を超える温かい食物・温かい飲み物"],"badDesc":"室温を超える温かい食物・温かい飲み物（※成分安定性が低下するため避ける）","warn":[],"good":[["アイスクリーム","スプーン1杯程度の柔らかい食物（アイスクリーム、ヨーグルト、りんごペースト等：室温以下）"],["ヨーグルト","スプーン1杯程度の柔らかい食物（アイスクリーム、ヨーグルト、りんごペースト等：室温以下）"]],"best":[["水","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"],["調製ミルク(室温以下)","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"],["母乳","水、室温以下の調製ミルク、母乳（※混ぜた後15分以内に服用）"]],"notice":"光に非常に不安定なため服用の直前まで開封しない。調製（混和）後は15分以内に服用し、残りの再分包や保存は行わない。","reason":"添付文書に「室温以下の柔らかい食物、調製ミルク又は母乳と混ぜて15分以内に服用すること」「光に不安定なため準備ができるまで開封せず放置しない」と明記されているため。","source":"シングレア細粒_添付文書_第1版_新記載要領"},"620006985":{"name":"デカドロンエリキシル0.01%","official":"デカドロンエリキシル０．０１％","cat":"副腎皮質ホルモン製剤 / エリキシル剤","alert":"アルコール併用厳禁","bad":["アルコール"],"badDesc":"アルコール飲料（※相互作用・中枢抑制増強のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、少量のジュース"]],"best":[["水","水、ぬるま湯"],["ぬるま湯","水、ぬるま湯"]],"notice":"添付文書の用法・用量に従い、用時調製し、光や湿気を避けて保存する。","reason":"添付文書に「本剤はエタノールを含有しているため、ジスルフィラム・シアナミドとの併用によりアルコール反応（顔面潮紅、悪心、呼吸困難等）を起こすことがある」と明記されているため。","source":"デカドロンエリキシル0.01%添付文書"},"620936201":{"name":"d-クロルフェニラミンマレイン酸塩シロップ0.04%","official":"ｄ－クロルフェニラミンマレイン酸塩シロップ０．０４％「トーワ」","cat":"抗ヒスタミン剤 / シロップ剤","alert":"","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"服用後に眠気を催すことがあるため、保護者による安全管理に注意する。","reason":"添付文書の併用注意に「アルコール：本剤の中枢抑制作用により作用が増強される」と明記されているため。","source":"d-クロルフェニラミンマレイン酸塩シロップ0.04%「トーワ」添付文書"},"620421101":{"name":"ビオスリー配合散","official":"ビオスリー配合散","cat":"活性生菌製剤（酪酸菌・ラクトミン・糖化菌配合剤） / 散剤","alert":"生菌製剤(熱湯・アミノフィリン不可)","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温により生菌が死滅・失活するため熱湯との混和は避ける）","warn":[["注意","アミノフィリン、イソニアジド等の特定配合薬剤（配合により変色・着色のおそれ）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"]],"best":[["水","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"],["ぬるま湯","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"]],"notice":"生菌製剤のため吸湿に弱く、高温や湿気を避けて保存する。開封・調製後は速やかに服用させる。","reason":"生菌製剤であり、開封後は湿気を避けて保存し、通常水などで服用する。","source":"480019_2316017B1041_1_08（ビオスリー配合散添付文書）"},"620003183":{"name":"ラックビー微粒N 1%","official":"ラックビー微粒Ｎ　１％","cat":"整腸剤（ビフィズス菌散） / 散剤（微粒）","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温により生菌が死滅・失活するため熱湯との混和は避ける）","warn":[["注意","アミノフィリン、イソニアジド等の特定配合薬剤（配合により変色・着色のおそれ）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"]],"best":[["水","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"],["ぬるま湯","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"]],"notice":"生菌製剤のため吸湿に弱く、高温や湿気を避けて保存する。開封・調製後は速やかに服用させる。","reason":"添付文書に「本剤は生菌製剤であるので、吸湿に注意すること」と取扱い上の注意が記載されているため。","source":"ラックビー微粒N/錠添付文書"},"612370067":{"name":"ミヤBM錠","official":"ミヤＢＭ錠","cat":"酪酸菌（宮入菌）製剤 / 錠剤","alert":"生菌製剤(熱湯・アミノフィリン不可)","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温により生菌が死滅・失活するため熱湯との混和は避ける）","warn":[["注意","アミノフィリン、イソニアジド等の特定配合薬剤（配合により変色・着色のおそれ）"]],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["アイスクリーム","服薬補助ゼリー、アイスクリーム、冷たいジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー、アイスクリーム、冷たいジュース"]],"best":[["水","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"],["ぬるま湯","水、ぬるま湯（※室温以下の水・ぬるま湯で服用）"]],"notice":"生菌製剤のため吸湿に弱く、高温や湿気を避けて保存する。開封・調製後は速やかに服用させる。","reason":"添付文書に「アミノフィリン、イソニアジドとの配合により着色することがあるので配合を避けることが望ましい」と記載されているため。","source":"750144_2316009C1026_1_07（ミヤBM錠添付文書）"},"622491001":{"name":"カルボシステイン錠250mg","official":"カルボシステイン錠２５０ｍｇ「ＪＧ」","cat":"気道粘液調整・粘膜正常化剤 / フィルムコーティング錠","alert":"","bad":["熱湯(室温超の高温)"],"badDesc":"熱湯（※高温での熱湯混ぜは変質・火傷防止のため避ける）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["アイスクリーム","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"],["少量のジュース(リンゴ等)","服薬補助ゼリー（イチゴ味・リンゴ味等）、アイスクリーム、少量のジュース"]],"best":[["水","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"],["ぬるま湯","水、ぬるま湯（シロップ・ドライシロップは用時懸濁）"]],"notice":"PTP包装からの誤飲に注意し、シートから取り出して服用させる。","reason":"添付文書にPTPシート誤飲注意が記載されており、通常の水またはぬるま湯で服用する。","source":"580591_2233002F1328_1_04（カルボシステイン錠250mg「JG」添付文書）"},"620945803":{"name":"ケトチフェンシロップ0.02%","official":"ケトチフェンシロップ０．０２％「日医工」","cat":"抗アレルギー剤 / シロップ剤","alert":"","bad":["アルコール"],"badDesc":"アルコール飲料、アルコール含有清涼飲料・食品（※鎮静作用・眠気等の中枢神経抑制作用が増強されるため禁忌・避けること）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"],["少量のジュース(リンゴ等)","服薬補助ゼリー、リンゴジュース、少量の果汁飲料"]],"best":[["水","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"],["ぬるま湯","水、ぬるま湯（就寝前の服用が推奨される剤形あり）"]],"notice":"服用後に眠気を催すことがあるため、保護者による安全管理に注意する。","reason":"抗ヒスタミン作用を有する抗アレルギーシロップ剤であり、アルコール等の併用で鎮静作用・眠気が増強されるため。","source":"ケトチフェンシロップ0.02%「日医工」添付文書"},"620881505":{"name":"ラクツロースシロップ65%","official":"ラクツロースシロップ６５％「ＮＩＧ」","cat":"生理的腸管機能改善・高アンモニア血症用剤（便秘治療薬） / シロップ剤","alert":"ガラクトース血症禁忌","bad":["ガラクトース・乳糖含有食品"],"badDesc":"ガラクトース・乳糖含有食品（※ガラクトース血症患児には禁忌）","warn":[],"good":[["服薬補助ゼリー(チョコ味/イチゴ味等)","少量のジュース、服薬補助ゼリー"],["少量のジュース(リンゴ等)","少量のジュース、服薬補助ゼリー"]],"best":[["水","水、ぬるま湯（そのまままたは水等で適宜希釈して服用）"],["ぬるま湯","水、ぬるま湯（そのまままたは水等で適宜希釈して服用）"]],"notice":"開封後は密栓し、高温での保存を避ける（高温下では着色や変質が進むおそれがあるため）。","reason":"添付文書「2. 禁忌」にガラクトース血症の患者への投与禁止（ガラクトース11%以下・乳糖6%以下を含有）を明記。「10.2 併用注意」にα-グルコシダーゼ阻害剤が指定されているため。","source":"ラクツロースシロップ65%「NIG」添付文書"}};
+const DISCLAIMER = '※本アプリの情報は添付文書等をもとにした参考情報です。実際の服薬については必ず医師・薬剤師にご確認ください。';
+
+function go(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  document.querySelectorAll('.bottomnav a.nav').forEach(a=>a.classList.remove('on'));
+  var navMap = {home:'home',checkform:'checkform',result:'checkform',note:'note',alarm:'alarm',detail:'home'};
+  var target = navMap[id] || id;
+  document.querySelectorAll('.bottomnav a.nav').forEach(a=>{ if(a.dataset.p===target) a.classList.add('on'); });
+  document.getElementById('suggestBox').style.display='none';
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.bottomnav a.nav').forEach(a=>a.addEventListener('click',()=>go(a.dataset.p)));
+
+function matchDrug(q){
+  q = q.trim().toLowerCase();
+  if(!q) return [];
+  return ALL_DRUGS.filter(d=> d.n.toLowerCase().includes(q) || (d.k||'').toLowerCase().includes(q));
+}
+function suggest(q){
+  var box = document.getElementById('suggestBox');
+  var m = matchDrug(q).slice(0,8);
+  if(!m.length){ box.style.display='none'; return; }
+  box.innerHTML = m.map(d=>'<div onclick="showDetail('+d.c+')">💊 '+d.n+'</div>').join('');
+  box.style.display='block';
+}
+function suggestCk(q){
+  var box = document.getElementById('ckSuggestBox');
+  var m = matchDrug(q).slice(0,8);
+  if(!m.length){ box.style.display='none'; return; }
+  box.innerHTML = m.map(d=>'<div data-n="'+d.n.replace(/"/g,'&quot;')+'">💊 '+d.n+'</div>').join('');
+  box.querySelectorAll('div').forEach(el=>el.addEventListener('click',()=>{
+    document.getElementById('ckDrug').value = el.dataset.n;
+    box.style.display='none';
+  }));
+  box.style.display='block';
+}
+function doSearch(){
+  var q = document.getElementById('homeSearch').value;
+  var m = matchDrug(q);
+  if(m.length) showDetail(m[0].c);
+  else notify('見つかりませんでした', '一致するお薬が見つかりませんでした。名前の一部やひらがな（例：くらりす、かるぼ）で検索してみてください。');
+}
+var currentDrugName = '';
+var currentFoodName = '';
+var currentDetail = null;
+var currentTier = '';
+
+function showDetail(code){
+  var d = DETAIL[code];
+  var meta = ALL_DRUGS.find(x=>x.c===code);
+  currentDrugName = d ? d.name : (meta ? meta.n : '');
+  currentFoodName = '';
+  currentDetail = d || null;
+  currentTier = '';
+  document.getElementById('dtName').textContent = (d?d.name:(meta?meta.n:'不明'));
+  document.getElementById('dtCat').textContent = d?d.cat:'薬効分類データ未登録';
+  var body = document.getElementById('dtBody');
+  if(!d){
+    body.innerHTML = '<div class="notreg">この薬の相性データはまだ登録されていません。</div>';
+  } else {
+    var alertHtml = d.alert ? '<div class="badge bad" style="margin-bottom:14px;display:inline-flex;">⚠ '+d.alert+'</div><br>' : '';
+    var badSection = '';
+    if(d.bad.length){
+      var badItems = d.bad.map(f=>'<div class="ti"><span>🔴</span>'+f+'</div>').join('');
+      badSection = '<div class="tier bad"><div class="th">✕ 非推奨</div><div class="tier-grid">'+badItems+'</div>'+(d.badDesc?'<div class="desc">ℹ '+d.badDesc+'</div>':'')+'</div>';
+    }
+    var warnCards = d.warn.map(w=>'<div class="icard"><div class="it">'+w[0]+'</div><div class="id">'+w[1]+'</div></div>').join('');
+    var goodCards = d.good.map(w=>'<div class="icard"><div class="it">'+w[0]+'</div><div class="id">'+w[1]+'</div></div>').join('');
+    var bestCards = d.best.map(w=>'<div class="icard"><div class="it">'+w[0]+'</div><div class="id">'+w[1]+'</div></div>').join('');
+    body.innerHTML = alertHtml + badSection +
+      (d.warn.length? '<div class="sec2" style="color:var(--warn-tx);">⚠ 注意</div><div class="card2">'+warnCards+'</div>' : '') +
+      (d.good.length? '<div class="sec2" style="color:var(--good-tx);">👍 おすすめ</div><div class="card2">'+goodCards+'</div>' : '') +
+      (d.best.length? '<div class="sec2" style="color:var(--best-tx);">✔ とってもおすすめ</div><div class="card2">'+bestCards+'</div>' : '') +
+      '<div class="notice"><b>💡 服薬・取扱上の注意</b><br>'+(d.notice||'特になし')+
+      '<br><br><b>判定理由：</b>'+(d.reason||'-')+
+      '<br><br><b>出典：</b>'+(d.source||'-')+'<br><br>'+DISCLAIMER+'</div>';
+  }
+  go('detail');
+}
+
+/* 相性チェック（ペア判定：実データ照合） */
+function quick(drug, food){
+  document.getElementById('ckDrug').value = drug;
+  document.getElementById('ckFood').value = food;
+  runCheck();
+}
+function findTier(detail, foodQuery){
+  var fq = foodQuery.trim();
+  if(!fq) return null;
+  function scan(list, tierName){
+    for(var i=0;i<list.length;i++){
+      var tag = Array.isArray(list[i]) ? list[i][0] : list[i];
+      var desc = Array.isArray(list[i]) ? list[i][1] : '';
+      if(tag && (tag.includes(fq) || fq.includes(tag.split('(')[0].split('（')[0]))){
+        return {tier:tierName, tag:tag, desc:desc};
+      }
+    }
+    return null;
+  }
+  return scan(detail.bad.map(f=>[f,detail.badDesc]),'bad') ||
+         scan(detail.warn,'warn') ||
+         scan(detail.good,'good') ||
+         scan(detail.best,'best');
+}
+function runCheck(){
+  var drugQ = document.getElementById('ckDrug').value.trim();
+  var foodQ = document.getElementById('ckFood').value.trim();
+  if(!drugQ || !foodQ){ notify('入力してください', 'お薬の名前と混ぜるものの両方を入力してください。'); return; }
+
+  var matches = matchDrug(drugQ);
+  var drugMeta = matches[0];
+  var d = drugMeta ? DETAIL[drugMeta.c] : null;
+  currentDrugName = d ? d.name : drugQ;
+  currentFoodName = foodQ;
+  currentDetail = d || null;
+  document.getElementById('resDrugFood').textContent = (d?d.name:drugQ) + ' × ' + foodQ;
+
+  var badge, reason, tip, tags, n, ev;
+  var hit = d ? findTier(d, foodQ) : null;
+  currentTier = hit ? hit.tier : '';
+
+  if(hit && hit.tier==='bad'){
+    badge = ['bad','非推奨 (×)'];
+    reason = hit.desc || (d.badDesc || 'この組み合わせは避けてください。');
+    tip = 'かわりに、' + (d.best.length? d.best.map(x=>x[0]).join('・') : (d.good.length? d.good.map(x=>x[0]).join('・') : '水やぬるま湯')) + ' などと混ぜると飲みやすくなります。';
+    tags = (d.best.length?d.best:d.good).map(x=>x[0]).slice(0,3);
+    n = ''; ev = d.reason || '添付文書に基づくデータです。';
+  } else if(hit && hit.tier==='best'){
+    badge = ['best','とってもおすすめ (◎)'];
+    reason = hit.desc || 'この組み合わせは相性が良いことが確認されています。';
+    tip = 'この組み合わせで問題なく服用できます。';
+    tags = d.best.map(x=>x[0]);
+    n = ''; ev = d.reason || '添付文書に基づくデータです。';
+  } else if(hit && hit.tier==='good'){
+    badge = ['good','おすすめ (○)'];
+    reason = hit.desc || 'この組み合わせはおすすめです。';
+    tip = 'より苦味を感じにくくしたい場合は '+(d.best.length? d.best.map(x=>x[0]).join('・'):'水') +' もおすすめです。';
+    tags = d.good.map(x=>x[0]);
+    n = ''; ev = d.reason || '添付文書に基づくデータです。';
+  } else if(hit && hit.tier==='warn'){
+    badge = ['warn','注意 (△)'];
+    reason = hit.desc || '状況によって注意が必要な組み合わせです。';
+    tip = 'なるべく早めに服用し、時間を置きすぎないようにしましょう。';
+    tags = [];
+    n = ''; ev = d.reason || '添付文書に基づくデータです。';
+  } else if(d){
+    badge = ['warn','要確認 (△)'];
+    reason = '「'+foodQ+'」についてのデータはこの薬の登録内容には見つかりませんでした。'+
+      (d.bad.length? '非推奨：'+d.bad.join('・')+'。' : '') +
+      (d.best.length? 'とってもおすすめ：'+d.best.map(x=>x[0]).join('・')+'。' : '');
+    tip = '薬剤師・医師にご確認のうえ服用してください。';
+    tags = [];
+    n = ''; ev = 'この食品の登録データはありません。';
+  } else {
+    badge = ['warn','要確認 (△)'];
+    reason = '「'+drugQ+'」に一致するお薬データが見つかりませんでした。名前の一部やひらがなで再度お試しください。';
+    tip = '薬剤師・医師にご確認のうえ服用してください。';
+    tags = [];
+    n = ''; ev = 'データベースに未登録の可能性があります。';
+  }
+  var ICONMAP = {bad:'✕', warn:'△', good:'○', best:'◎'};
+  document.getElementById('verdictBox').className = 'verdict '+badge[0];
+  document.getElementById('verdictIcon').textContent = ICONMAP[badge[0]] || '?';
+  document.getElementById('verdictText').textContent = badge[1];
+  document.getElementById('resReason').textContent = reason;
+  document.getElementById('resTip').textContent = tip;
+  document.getElementById('resTagline').innerHTML = tags.map(t=>'<span>'+t+'</span>').join('');
+  document.getElementById('resN').textContent = n || 'エビデンス';
+  document.getElementById('resEvidence').textContent = ev;
+  go('result');
+}
+
+/* お薬ノート（localStorageに保存） */
+var noteOffset = 0;
+function dateLabel(off){
+  var d = new Date(); d.setDate(d.getDate()+off);
+  if(off===0) return '今日 ' + (d.getMonth()+1)+'月'+d.getDate()+'日';
+  return (d.getMonth()+1)+'月'+d.getDate()+'日';
+}
+function loadNotes(){
+  try{ return JSON.parse(localStorage.getItem('okusuri_notes')||'[]'); }catch(e){ return []; }
+}
+function saveNotes(list){
+  try{ localStorage.setItem('okusuri_notes', JSON.stringify(list)); }catch(e){}
+}
+function tierLabel(tier){
+  return {bad:'✕ 非推奨', warn:'△ 注意', good:'○ おすすめ', best:'◎ とってもおすすめ'}[tier] || '';
+}
+function renderNotes(){
+  document.getElementById('noteDate').textContent = dateLabel(noteOffset);
+  var key = new Date(); key.setDate(key.getDate()+noteOffset);
+  var keyStr = key.toDateString();
+  var notes = loadNotes().filter(n=>n.date===keyStr);
+  var list = document.getElementById('noteList');
+  if(!notes.length){
+    list.innerHTML = '<div class="notreg">この日の記録はまだありません。</div>';
+    return;
+  }
+  list.innerHTML = notes.map(n=>{
+    var lbl = tierLabel(n.tier);
+    var badge = lbl ? '<span class="st '+n.tier+'">'+lbl+'</span>' : '<span class="st ok">記録済</span>';
+    return '<div class="note-card"><div class="note-top"><span>'+n.time+'</span>'+badge+'</div>'+
+    '<div class="note-name">'+n.drug+'</div>'+
+    '<div class="note-mix">🍮 '+(n.food||'そのまま')+(n.memo?'<br>'+n.memo:'')+'</div></div>';
+  }).join('');
+}
+function shiftDate(d){ noteOffset += d; renderNotes(); }
+function addNote(){
+  var drug = document.getElementById('nDrug').value.trim();
+  if(!drug){ notify('入力してください', 'お薬の名前を入力してください。'); return; }
+  var food = document.getElementById('nFood').value.trim();
+  var memo = document.getElementById('nMemo').value.trim();
+  var key = new Date(); key.setDate(key.getDate()+noteOffset);
+  var now = new Date();
+  var notes = loadNotes();
+  var tier = '';
+  if(food){
+    var m = matchDrug(drug)[0];
+    var d2 = m ? DETAIL[m.c] : null;
+    var hit = d2 ? findTier(d2, food) : null;
+    tier = hit ? hit.tier : '';
+  }
+  notes.push({date:key.toDateString(), time:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'), drug:drug, food:food, tier:tier, memo:memo});
+  saveNotes(notes);
+  document.getElementById('nDrug').value=''; document.getElementById('nFood').value=''; document.getElementById('nMemo').value='';
+  renderNotes();
+}
+
+/* モーダル（sandboxされた環境でも動くよう confirm/alert/prompt は使わない） */
+function openModal(html){
+  document.getElementById('modalBox').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+function notify(title, msg){
+  openModal('<h3>'+title+'</h3><p>'+msg+'</p><div class="modal-actions"><button class="ok" style="flex:1" onclick="closeModal()">閉じる</button></div>');
+}
+
+/* 飲食品の選択肢（bad/good/bestタグから作成） */
+function buildFoodOptions(d){
+  var out = [];
+  (d.bad||[]).forEach(f=>out.push({food:f, tier:'bad'}));
+  (d.good||[]).forEach(w=>out.push({food:w[0], tier:'good'}));
+  (d.best||[]).forEach(w=>out.push({food:w[0], tier:'best'}));
+  return out;
+}
+function optionButtonsHtml(opts, fnName){
+  if(!opts.length) return '';
+  return '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow:auto;">' +
+    opts.map(o=>'<button class="opt-btn" onclick="'+fnName+'(\''+o.food.replace(/'/g,"\\'")+'\',\''+o.tier+'\')">'+
+      '<span class="opt-dot '+o.tier+'"></span>'+o.food+'</button>').join('') +
+    '</div>';
+}
+function otherRowHtml(inputId, fnName){
+  return '<div style="display:flex;gap:8px;margin-bottom:12px;">'+
+    '<input id="'+inputId+'" placeholder="その他の飲食品名" style="margin-bottom:0;">'+
+    '<button class="ok" style="flex:0 0 auto;padding:0 16px;" onclick="'+fnName+'()">保存</button></div>';
+}
+function saveNoteEntry(drug, food, tier){
+  var now = new Date();
+  var notes = loadNotes();
+  notes.push({date:new Date().toDateString(), time:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'), drug:drug, food:food, tier:tier||'', memo:''});
+  saveNotes(notes);
+  renderNotes();
+}
+function saveNoteAndNotify(drug, food, tier){
+  saveNoteEntry(drug, food, tier);
+  closeModal();
+  notify('✅ 保存しました', '「'+drug+' × '+food+'」を記録しました。');
+}
+
+/* 薬詳細画面から：今回はどの飲食品と飲みますか？ */
+function askSaveNoteFromDetail(){
+  if(!currentDrugName) return;
+  if(!currentDetail){
+    openModal(
+      '<h3>📖 お薬ノートに保存</h3>'+
+      '<p>今回は、どの飲食品と一緒に飲みますか？</p>'+
+      otherRowHtml('otherFoodInputD','saveDetailFoodOther')+
+      '<div class="modal-actions"><button class="cancel" style="flex:1" onclick="closeModal()">キャンセル</button></div>'
+    );
+    return;
+  }
+  var opts = buildFoodOptions(currentDetail);
+  openModal(
+    '<h3>📖 お薬ノートに保存</h3>'+
+    '<p>今回は、どの飲食品と一緒に飲みますか？</p>'+
+    optionButtonsHtml(opts,'selectDetailFood')+
+    otherRowHtml('otherFoodInputD','saveDetailFoodOther')+
+    '<div class="modal-actions"><button class="cancel" style="flex:1" onclick="closeModal()">キャンセル</button></div>'
+  );
+}
+function selectDetailFood(food, tier){ saveNoteAndNotify(currentDrugName, food, tier); }
+function saveDetailFoodOther(){
+  var food = document.getElementById('otherFoodInputD').value.trim();
+  if(!food){ notify('入力してください','飲食品名を入力してください。'); return; }
+  var m = currentDetail ? findTier(currentDetail, food) : null;
+  saveNoteAndNotify(currentDrugName, food, m?m.tier:'');
+}
+
+/* 相性チェック結果から：この組み合わせで保存しますか？ */
+function askSaveNoteFromResult(){
+  if(!currentDrugName) return;
+  openModal(
+    '<h3>📖 お薬ノートに保存</h3>'+
+    '<p>この薬と飲食品（「'+currentDrugName+' × '+currentFoodName+'」）で保存しますか？</p>'+
+    '<div class="modal-actions"><button class="cancel" onclick="declineResultSave()">いいえ</button>'+
+    '<button class="ok" onclick="acceptResultSave()">はい</button></div>'
+  );
+}
+function acceptResultSave(){
+  saveNoteAndNotify(currentDrugName, currentFoodName, currentTier);
+}
+function declineResultSave(){
+  if(currentDetail){
+    var opts = buildFoodOptions(currentDetail);
+    openModal(
+      '<h3>飲食品を選び直す</h3>'+
+      '<p>判定結果の中から、どの飲食品を使いますか？</p>'+
+      optionButtonsHtml(opts,'selectResultFood')+
+      otherRowHtml('otherFoodInputR','saveResultFoodOther')+
+      '<div class="modal-actions"><button class="cancel" style="flex:1" onclick="closeModal()">キャンセル</button></div>'
+    );
+  } else {
+    openModal(
+      '<h3>飲食品を入力</h3>'+
+      '<p>使用した飲食品名を入力してください。</p>'+
+      otherRowHtml('otherFoodInputR','saveResultFoodOther')+
+      '<div class="modal-actions"><button class="cancel" style="flex:1" onclick="closeModal()">キャンセル</button></div>'
+    );
+  }
+}
+function selectResultFood(food, tier){ saveNoteAndNotify(currentDrugName, food, tier); }
+function saveResultFoodOther(){
+  var food = document.getElementById('otherFoodInputR').value.trim();
+  if(!food){ notify('入力してください','飲食品名を入力してください。'); return; }
+  var m = currentDetail ? findTier(currentDetail, food) : null;
+  saveNoteAndNotify(currentDrugName, food, m?m.tier:'');
+}
+function askSetAlarm(){
+  if(!currentDrugName) return;
+  openModal(
+    '<h3>⏰ アラームを設定</h3>'+
+    '<p>「'+currentDrugName+'」の飲み忘れ防止の通知時間を入力してください。</p>'+
+    '<input type="time" id="modalTimeInput" value="08:00">'+
+    '<div class="modal-actions"><button class="cancel" onclick="closeModal()">キャンセル</button>'+
+    '<button class="ok" onclick="doSetAlarm()">設定する</button></div>'
+  );
+}
+function doSetAlarm(){
+  var time = document.getElementById('modalTimeInput').value || '08:00';
+  addAlarm(currentDrugName, time);
+  openModal('<h3>✅ 設定しました</h3><p>「'+currentDrugName+'」（'+time+'）のアラームを追加しました。</p><div class="modal-actions"><button class="ok" style="flex:1" onclick="closeModal();go(\'alarm\')">アラーム画面を見る</button></div>');
+}
+function manualAddAlarm(){
+  openModal(
+    '<h3>＋ 新しいアラームを追加</h3>'+
+    '<input id="modalDrugInput" placeholder="お薬の名前">'+
+    '<input type="time" id="modalTimeInput2" value="08:00">'+
+    '<div class="modal-actions"><button class="cancel" onclick="closeModal()">キャンセル</button>'+
+    '<button class="ok" onclick="doManualAddAlarm()">追加する</button></div>'
+  );
+}
+function doManualAddAlarm(){
+  var drug = document.getElementById('modalDrugInput').value.trim();
+  var time = document.getElementById('modalTimeInput2').value || '08:00';
+  if(!drug){ notify('お薬の名前を入力してください', 'お薬の名前を入力してから追加してください。'); return; }
+  addAlarm(drug, time);
+  closeModal();
+}
+
+/* アラーム（localStorageに保存） */
+function loadAlarms(){
+  try{ return JSON.parse(localStorage.getItem('okusuri_alarms')||'[]'); }catch(e){ return []; }
+}
+function saveAlarms(list){
+  try{ localStorage.setItem('okusuri_alarms', JSON.stringify(list)); }catch(e){}
+}
+function addAlarm(drug, time){
+  var list = loadAlarms();
+  list.push({id:Date.now(), drug:drug, desc:'手動追加', times:[time], on:true});
+  saveAlarms(list);
+  renderAlarms();
+}
+function toggleAlarm(id){
+  var list = loadAlarms();
+  list.forEach(a=>{ if(a.id===id) a.on = !a.on; });
+  saveAlarms(list);
+  renderAlarms();
+}
+function renderAlarms(){
+  var list = loadAlarms();
+  var el = document.getElementById('alarmList');
+  if(!list.length){ el.innerHTML = '<div class="notreg">アラームはまだありません。</div>'; return; }
+  el.innerHTML = list.map(a=>
+    '<div class="al-card"><div class="al-top"><div><div class="n">'+a.drug+'</div><div class="d">'+a.desc+'</div></div>'+
+    '<div class="tgl '+(a.on?'on':'')+'" onclick="toggleAlarm('+a.id+')"><i></i></div></div>'+
+    a.times.map(t=>'<div class="al-row">'+t.replace(' ','<b>')+'</b></div>').join('')+
+    '</div>'
+  ).join('');
+}
+
+renderNotes();
+renderAlarms();
+</script>
+
+</body></html>
