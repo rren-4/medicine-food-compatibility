@@ -5216,7 +5216,7 @@ function showDetail(code) {
     html += `<div class="grp-d">${J_DESC[j]}</div>`;
     if (j === 'bad') {
       /* 「避ける」は、なぜ避けるのか（資料の記載）をタップしなくても見えるようにする */
-      html += list.map(x => `<div class="why"><b>${esc(x.f)}</b>：${esc(x.r.m || x.r.d)}</div>`).join('');
+      html += list.map(x => `<div class="why"><b>${esc(x.f)}</b>：${esc(x.r.d)}</div>`).join('');
     }
     html += `<div class="chips">` + list.map(x => `<button type="button" class="fchipx" onclick="openFood(${x.i}, this)">${esc(x.f)}</button>`).join('') + `</div>`;
     html += `<div class="fpanel" style="display:none;"></div></div>`;
