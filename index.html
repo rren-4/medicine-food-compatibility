@@ -266,6 +266,10 @@ footer b{ color:var(--brand-d); font-family:var(--font-d); font-size:var(--fs-2)
 .ncard-name{ font-weight:800; font-size:var(--fs-4); line-height:1.5; margin-top:2px; }
 .ncard-row{ margin-top:var(--s1); line-height:1.65; }
 .ncard-row span{ color:var(--ink-3); font-size:var(--fs-2); font-weight:700; margin-right:var(--s1); }
+/* 使った飲食品は、メモより大きく目立たせる（この記録で一番見返したい情報のため） */
+.ncard-food{ margin-top:var(--s2); background:var(--brand-l); border:1px solid var(--brand-line); border-radius:var(--r1); padding:var(--s2) var(--s3); }
+.ncard-food .nf-label{ display:block; font-size:var(--fs-1); color:var(--brand-d); font-weight:700; line-height:1.4; }
+.ncard-food .nf-name{ display:block; font-size:var(--fs-5); font-weight:800; line-height:1.45; margin-top:1px; }
 .ncard-actions{ display:flex; gap:var(--s2); margin-top:var(--s3); }
 .empty{ margin-top:var(--s4); text-align:center; padding:var(--s6) var(--s4); background:var(--surface); border:1px dashed var(--line); border-radius:var(--r2); color:var(--ink-2); line-height:1.7; }
 .addform{ margin-top:var(--s5); background:var(--surface); border:1px solid var(--line); border-radius:var(--r3); padding:var(--s4); box-shadow:var(--shadow); }
@@ -6203,7 +6207,7 @@ function renderNotes() {
     <article class="ncard">
       <div class="ncard-top">${esc(item.time || '')}　記録</div>
       <div class="ncard-name">${esc(item.drug)}</div>
-      ${item.food ? `<div class="ncard-row"><span>服薬時に使った飲食品</span>${esc(item.food)}</div>` : ''}
+      ${item.food ? `<div class="ncard-food"><span class="nf-label">服薬時に使った飲食品</span><span class="nf-name">${esc(item.food)}</span></div>` : ''}
       ${item.memo ? `<div class="ncard-row"><span>メモ</span>${esc(item.memo)}</div>` : ''}
       <div class="ncard-actions">
         <button type="button" class="btn btn-secondary btn-sm" onclick="editNote('${key}', ${idx})">${svgIcon('edit')}編集</button>
@@ -6337,12 +6341,66 @@ function askSaveNoteFromResult() {
   toast('今日のお薬ノートに保存しました');
 }
 
+/* 詳細画面から保存するときの飲食品の候補：
+   水と、この薬の詳細に載っている飲食品と、よく使う飲食品から、重複を除いて並べる。
+   チップはタップで入力欄に入るだけで、自由入力もできる。 */
+function detailNoteFoodChips() {
+  const list = [];
+  const add = (f) => { if (f && list.indexOf(f) === -1) list.push(f); };
+  add('水');
+  (typeof foodItems !== 'undefined' ? foodItems : []).forEach(x => add(x.f));
+  QUICK_FOODS.forEach(add);
+  return list.slice(0, 18);
+}
+
+function syncDetailNoteFoodChips() {
+  const inp = document.getElementById('dFood');
+  if (!inp) return;
+  const v = inp.value.trim();
+  document.querySelectorAll('#dFoodChips .qchip').forEach(b => {
+    b.setAttribute('aria-pressed', b.getAttribute('data-food') === v ? 'true' : 'false');
+  });
+}
+
 function askSaveNoteFromDetail() {
   if (!currentDetail) return;
+  const chips = detailNoteFoodChips().map(f =>
+    `<button type="button" class="qchip" data-food="${esc(f)}" aria-pressed="false">${esc(f)}</button>`
+  ).join('');
+  showModal(`
+    <h2 id="mTitle">お薬ノートに保存</h2>
+    <p class="m-text">お薬：${esc(currentDetail.name)}<br>服薬時に使った飲食品があれば、あわせて記録できます。</p>
+    <div class="field"><label for="dFood">服薬時に使った飲食品（任意）</label><input class="input" id="dFood" placeholder="例：チョコアイス" autocomplete="off" enterkeyhint="done"></div>
+    <div class="qchips" id="dFoodChips" role="group" aria-label="この薬で調べられる飲食品から選ぶ">${chips}</div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeModal()">やめる</button>
+      <button type="button" class="btn btn-primary" onclick="saveNoteFromDetail()">保存する</button>
+    </div>
+  `, 'mTitle');
+  const inp = document.getElementById('dFood');
+  document.querySelectorAll('#dFoodChips .qchip').forEach(b => {
+    b.addEventListener('click', () => {
+      /* 同じチップをもう一度押したら取り消す。押したものが入力欄に入る */
+      inp.value = (inp.value.trim() === b.getAttribute('data-food')) ? '' : b.getAttribute('data-food');
+      syncDetailNoteFoodChips();
+      inp.focus();
+    });
+  });
+  if (inp) {
+    inp.addEventListener('input', syncDetailNoteFoodChips);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveNoteFromDetail(); } });
+  }
+}
+
+function saveNoteFromDetail() {
+  if (!currentDetail) { closeModal(); return; }
+  const inp = document.getElementById('dFood');
+  const food = inp ? inp.value.trim() : '';
   const key = getDateKey(0);
   const notes = getStorage('notes_' + key);
-  notes.push({ drug: currentDetail.name, food: '', memo: '詳細表示より記録', time: nowTimeLabel() });
+  notes.push({ drug: currentDetail.name, food, memo: '詳細表示より記録', time: nowTimeLabel() });
   setStorage('notes_' + key, notes);
+  closeModal();
   currentDateOffset = 0;
   go('note', { tab: true });
   toast('今日のお薬ノートに保存しました');
